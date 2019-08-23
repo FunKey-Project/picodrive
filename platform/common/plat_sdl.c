@@ -1540,11 +1540,12 @@ void plat_init(void)
 
 void plat_finish(void)
 {
-
+	SDL_FreeSurface(virtual_hw_screen);
 	deinit_menu_SDL();
 	free(shadow_fb);
 	shadow_fb = NULL;
 	free(g_menubg_ptr);
 	g_menubg_ptr = NULL;
+	TTF_Quit();
 	plat_sdl_finish();
 }

@@ -2,8 +2,6 @@
 *.swp
 tags
 cscope.out
-PicoDrive.map
-config.mak
 config.log
 cpu/musashi/m68kmake
 cpu/musashi/m68kops.c
@@ -17,5 +15,7 @@ cfg/
 libs/
 obj/
 .opk_data
-PicoDrive
-PicoDrive.opk
+*.opk
+*.dge
+*.ipk
+*.map
