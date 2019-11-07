@@ -668,7 +668,7 @@ void run_menu_loop()
                         /// ------ Start scrolling to new menu -------
                         menuItem++;
                         if (menuItem>=nb_menu_zones) menuItem=0;
-                        scroll=SCROLL_SPEED_PX;
+                        scroll=1;
 
                         /// ------ Reset menu confirmation ------
                         menu_confirmation = 0;
@@ -683,7 +683,7 @@ void run_menu_loop()
                         /// ------ Start scrolling to new menu -------
                         menuItem--;
                         if (menuItem<0) menuItem=nb_menu_zones-1;
-                        scroll=-SCROLL_SPEED_PX;
+                        scroll=-1;
 
                         /// ------ Reset menu confirmation ------
                         menu_confirmation = 0;
@@ -892,17 +892,17 @@ void run_menu_loop()
         }
 
         /// --------- Handle Scroll effect ---------
-        if (scroll>0){
-            scroll+=SCROLL_SPEED_PX;
-            screen_refresh = 1;
-        }
-        if (scroll<0){
-            scroll-=SCROLL_SPEED_PX;
-            screen_refresh = 1;
-        }
         if (scroll>MENU_ZONE_HEIGHT || scroll<-MENU_ZONE_HEIGHT) {
             prevItem=menuItem;
             scroll=0;
+            screen_refresh = 1;
+        }
+        else if (scroll>0){
+            scroll+=SCROLL_SPEED_PX;
+            screen_refresh = 1;
+        }
+        else if (scroll<0){
+            scroll-=SCROLL_SPEED_PX;
             screen_refresh = 1;
         }
 
