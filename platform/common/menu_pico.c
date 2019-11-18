@@ -86,6 +86,9 @@ static const char *men_dummy[] = { NULL };
 
 
 /// -------------- DEFINES --------------
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 //#define MENU_DEBUG
 #define MENU_ERROR
 
@@ -892,17 +895,17 @@ void run_menu_loop()
         }
 
         /// --------- Handle Scroll effect ---------
-        if (scroll>MENU_ZONE_HEIGHT || scroll<-MENU_ZONE_HEIGHT) {
+        if (scroll>=MENU_ZONE_HEIGHT || scroll<=-MENU_ZONE_HEIGHT) {
             prevItem=menuItem;
             scroll=0;
             screen_refresh = 1;
         }
         else if (scroll>0){
-            scroll+=SCROLL_SPEED_PX;
+            scroll+=MIN(SCROLL_SPEED_PX, MENU_ZONE_HEIGHT-scroll);
             screen_refresh = 1;
         }
         else if (scroll<0){
-            scroll-=SCROLL_SPEED_PX;
+            scroll-=MIN(SCROLL_SPEED_PX, MENU_ZONE_HEIGHT+scroll);
             screen_refresh = 1;
         }
 
