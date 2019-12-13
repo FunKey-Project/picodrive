@@ -1426,7 +1426,7 @@ void emu_sound_start(void)
 	{
 		int is_stereo = (PicoIn.opt & POPT_EN_STEREO) ? 1 : 0;
 		/// Hard Bypass Stereo to mono
-		is_stereo = 0;
+		//is_stereo = 0;
 
 		PsndRerate(Pico.m.frame_count ? 1 : 0);
 
