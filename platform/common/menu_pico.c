@@ -602,9 +602,12 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
              SDL_FreeSurface(text_surface);
     }
 
-    /// --------- Render Screen ----------
-    SDL_Rotate_270(hw_screen, draw_screen);
-    //SDL_Flip(draw_screen);
+    // Rotate
+    //SDL_Rotate_270(hw_screen, virtual_hw_screen);
+    SDL_BlitSurface(draw_screen, NULL, hw_screen, NULL);
+
+    /// --- Real Flip ---
+    SDL_Flip(hw_screen);
 }
 
 

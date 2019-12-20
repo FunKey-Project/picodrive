@@ -34,18 +34,18 @@ static void *shadow_fb;
 
 const struct in_default_bind in_sdl_defbinds[] __attribute__((weak)) = {
 	{ SDLK_u,     	IN_BINDTYPE_PLAYER12, GBTN_UP },
-	{ SDLK_d,		IN_BINDTYPE_PLAYER12, GBTN_DOWN },
-	{ SDLK_l,   	IN_BINDTYPE_PLAYER12, GBTN_LEFT },
-	{ SDLK_r,  		IN_BINDTYPE_PLAYER12, GBTN_RIGHT },
-	{ SDLK_a,      	IN_BINDTYPE_PLAYER12, GBTN_A },
-	{ SDLK_b,      	IN_BINDTYPE_PLAYER12, GBTN_B },
-	{ SDLK_x,      	IN_BINDTYPE_PLAYER12, GBTN_C },
-	{ SDLK_y,      	IN_BINDTYPE_PLAYER12, GBTN_X },
-	{ SDLK_m,      	IN_BINDTYPE_PLAYER12, GBTN_Y },
+	{ SDLK_d,		    IN_BINDTYPE_PLAYER12, GBTN_DOWN },
+	{ SDLK_l,   	  IN_BINDTYPE_PLAYER12, GBTN_LEFT },
+	{ SDLK_r,  		  IN_BINDTYPE_PLAYER12, GBTN_RIGHT },
+	{ SDLK_x,       IN_BINDTYPE_PLAYER12, GBTN_A },
+	{ SDLK_a,      	IN_BINDTYPE_PLAYER12, GBTN_B },
+	{ SDLK_b,      	IN_BINDTYPE_PLAYER12, GBTN_C },
+	{ SDLK_y,      	IN_BINDTYPE_PLAYER12, GBTN_Y },
+	{ SDLK_m,      	IN_BINDTYPE_PLAYER12, GBTN_X },
 	{ SDLK_n,      	IN_BINDTYPE_PLAYER12, GBTN_Z },
-	{ SDLK_s, 		IN_BINDTYPE_PLAYER12, GBTN_START },
+	{ SDLK_s, 		 IN_BINDTYPE_PLAYER12, GBTN_START },
 	{ SDLK_k,      	IN_BINDTYPE_PLAYER12, GBTN_MODE },
-	{ SDLK_q, 		IN_BINDTYPE_EMU, PEVB_MENU },
+	{ SDLK_q, 		 IN_BINDTYPE_EMU, PEVB_MENU },
 	{ SDLK_TAB,    	IN_BINDTYPE_EMU, PEVB_RESET },
 	{ SDLK_p,     	IN_BINDTYPE_EMU, PEVB_STATE_SAVE },
 	{ SDLK_F2,     	IN_BINDTYPE_EMU, PEVB_STATE_LOAD },
@@ -1323,9 +1323,6 @@ void SDL_Rotate_270(SDL_Surface * hw_surface, SDL_Surface * virtual_hw_surface){
 			*cur_p_dst = *cur_p_src;
 		}
 	}
-
-	/// --- Real Flip ---
-	SDL_Flip(hw_surface);
 }
 
 void plat_video_flip(void)
@@ -1354,40 +1351,46 @@ void plat_video_flip(void)
 			clear_screen(virtual_hw_screen, 0);
 			prev_aspect_ratio = aspect_ratio;
 			need_screen_cleared = 0;
-	    }
+		}
 
-	    switch(aspect_ratio){
-	      case ASPECT_RATIOS_TYPE_STRECHED:
-	      flip_NNOptimized_LeftAndRightBilinear(plat_sdl_screen, virtual_hw_screen,
-	        RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
-	      break;
-	      case ASPECT_RATIOS_TYPE_MANUAL:
-	      ;uint32_t h_scaled = MIN(plat_sdl_screen->h*RES_HW_SCREEN_HORIZONTAL/plat_sdl_screen->w,
-	                              RES_HW_SCREEN_VERTICAL);
-	      uint32_t h_zoomed = MIN(h_scaled + aspect_ratio_factor_percent*(RES_HW_SCREEN_VERTICAL - h_scaled)/100,
-	                              RES_HW_SCREEN_VERTICAL);
-	      flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(plat_sdl_screen, virtual_hw_screen,
-	          MAX(plat_sdl_screen->w*h_zoomed/plat_sdl_screen->h, RES_HW_SCREEN_HORIZONTAL),
-	          MIN(h_zoomed, RES_HW_SCREEN_VERTICAL));
-	      break;
-	      case ASPECT_RATIOS_TYPE_CROPPED:
-	      flip_NNOptimized_AllowOutOfScreen(plat_sdl_screen, virtual_hw_screen,
-	        MAX(plat_sdl_screen->w*RES_HW_SCREEN_VERTICAL/plat_sdl_screen->h, RES_HW_SCREEN_HORIZONTAL),
-	        RES_HW_SCREEN_VERTICAL);
-	      break;
-	      case ASPECT_RATIOS_TYPE_SCALED:
-	      flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(plat_sdl_screen, virtual_hw_screen,
-	        RES_HW_SCREEN_HORIZONTAL,
-	        MIN(plat_sdl_screen->h*RES_HW_SCREEN_HORIZONTAL/plat_sdl_screen->w, RES_HW_SCREEN_VERTICAL));
-	      break;
-	      default:
-	      printf("Wrong aspect ratio value: %d\n", aspect_ratio);
-	      aspect_ratio = ASPECT_RATIOS_TYPE_STRECHED;
-	      flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(plat_sdl_screen, virtual_hw_screen,
-	        RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
-	      break;
-	    }
-		SDL_Rotate_270(hw_screen, virtual_hw_screen);
+		switch(aspect_ratio){
+		case ASPECT_RATIOS_TYPE_STRECHED:
+			flip_NNOptimized_LeftAndRightBilinear(plat_sdl_screen, virtual_hw_screen,
+							      RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
+			break;
+		case ASPECT_RATIOS_TYPE_MANUAL:
+			;uint32_t h_scaled = MIN(plat_sdl_screen->h*RES_HW_SCREEN_HORIZONTAL/plat_sdl_screen->w,
+						 RES_HW_SCREEN_VERTICAL);
+			uint32_t h_zoomed = MIN(h_scaled + aspect_ratio_factor_percent*(RES_HW_SCREEN_VERTICAL - h_scaled)/100,
+						RES_HW_SCREEN_VERTICAL);
+			flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(plat_sdl_screen, virtual_hw_screen,
+									    MAX(plat_sdl_screen->w*h_zoomed/plat_sdl_screen->h, RES_HW_SCREEN_HORIZONTAL),
+									    MIN(h_zoomed, RES_HW_SCREEN_VERTICAL));
+			break;
+	    	case ASPECT_RATIOS_TYPE_CROPPED:
+			flip_NNOptimized_AllowOutOfScreen(plat_sdl_screen, virtual_hw_screen,
+							  MAX(plat_sdl_screen->w*RES_HW_SCREEN_VERTICAL/plat_sdl_screen->h, RES_HW_SCREEN_HORIZONTAL),
+							  RES_HW_SCREEN_VERTICAL);
+			break;
+		case ASPECT_RATIOS_TYPE_SCALED:
+			flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(plat_sdl_screen, virtual_hw_screen,
+									    RES_HW_SCREEN_HORIZONTAL,
+									    MIN(plat_sdl_screen->h*RES_HW_SCREEN_HORIZONTAL/plat_sdl_screen->w, RES_HW_SCREEN_VERTICAL));
+			break;
+		default:
+			printf("Wrong aspect ratio value: %d\n", aspect_ratio);
+			aspect_ratio = ASPECT_RATIOS_TYPE_STRECHED;
+			flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(plat_sdl_screen, virtual_hw_screen,
+									    RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
+			break;
+		}
+
+		// Rotate
+		//SDL_Rotate_270(hw_screen, virtual_hw_screen);
+		SDL_BlitSurface(virtual_hw_screen, NULL, hw_screen, NULL);
+
+		/// --- Real Flip ---
+		SDL_Flip(hw_screen);
 
 
 		g_screen_ptr = plat_sdl_screen->pixels;
