@@ -1387,7 +1387,8 @@ void plat_video_flip(void)
 
 		// Rotate
 		//SDL_Rotate_270(hw_screen, virtual_hw_screen);
-		SDL_BlitSurface(virtual_hw_screen, NULL, hw_screen, NULL);
+		//SDL_BlitSurface(virtual_hw_screen, NULL, hw_screen, NULL);
+		memcpy(hw_screen->pixels, virtual_hw_screen->pixels, hw_screen->w*hw_screen->h*sizeof(uint16_t));
 
 		/// --- Real Flip ---
 		SDL_Flip(hw_screen);
