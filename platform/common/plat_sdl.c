@@ -1537,8 +1537,8 @@ void plat_init(void)
 
 
 	init_menu_SDL();
-	init_menu_zones();
-	init_menu_system_values();
+	//init_menu_zones();
+	//init_menu_system_values();
 	bgr_to_uyvy_init();
 }
 
