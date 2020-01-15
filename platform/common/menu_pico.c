@@ -242,11 +242,15 @@ void deinit_menu_SDL(){
     SDL_FreeSurface(backup_hw_screen);
     SDL_FreeSurface(draw_screen);
 
-    nb_menu_zones = 0;
-    free(idx_menus);
-
     SDL_FreeSurface(img_arrow_top);
     SDL_FreeSurface(img_arrow_bottom);
+
+    /// ------ Free Menu memory and reset vars -----
+    if(idx_menus){
+        free(idx_menus);
+    }
+    idx_menus=NULL;
+    nb_menu_zones = 0;
 }
 
 
