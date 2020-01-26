@@ -343,7 +343,8 @@ static void system_announce(void)
 	tv_standard = Pico.m.pal ? "PAL" : "NTSC";
 	fps = Pico.m.pal ? 50 : 60;
 
-	emu_status_msg("%s %s / %dFPS%s", tv_standard, sys_name, fps, extra);
+	//emu_status_msg("%s %s / %dFPS%s", tv_standard, sys_name, fps, extra);
+	printf("%s %s / %dFPS%s\n", tv_standard, sys_name, fps, extra);
 }
 
 static void do_region_override(const char *media_fname)
@@ -876,8 +877,8 @@ int emu_save_load_game(int load, int sram)
 	// make save filename
 	saveFname = emu_get_save_fname(load, sram, state_slot, NULL);
 	if (saveFname == NULL) {
-		if (!sram)
-			emu_status_msg(load ? "LOAD FAILED (missing file)" : "SAVE FAILED");
+		/*if (!sram)
+			emu_status_msg(load ? "LOAD FAILED (missing file)" : "SAVE FAILED");*/
 		return -1;
 	}
 
@@ -945,9 +946,9 @@ int emu_save_load_game(int load, int sram)
 #ifdef __GP2X__
 			if (!load) sync();
 #endif
-			emu_status_msg(load ? "STATE LOADED" : "STATE SAVED");
+			//emu_status_msg(load ? "STATE LOADED" : "STATE SAVED");
 		} else {
-			emu_status_msg(load ? "LOAD FAILED" : "SAVE FAILED");
+			//emu_status_msg(load ? "LOAD FAILED" : "SAVE FAILED");
 			ret = -1;
 		}
 

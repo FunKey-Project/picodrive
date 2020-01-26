@@ -869,11 +869,22 @@ void run_menu_loop()
 
                                 /// ------ Save game ------
                                 int ret = emu_save_load_game(0, 0);
+
+                                /// ----- Hud Msg -----
                                 if(ret){
                                     MENU_ERROR_PRINTF("Save Failed\n");
+                                    sprintf(shell_cmd, "%s %d \"          SAVE FAILED\"",
+                                        SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP);
                                 }
-                                /*snprintf(hud_msg, sizeof(hud_msg), ret == 0 ? "SAVED" : "FAIL!");
-                                hud_new_msg = 3;*/
+                                else{
+                                    sprintf(shell_cmd, "%s %d \"        SAVED IN SLOT %d\"",
+                                        SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, state_slot+1);
+                                }
+                                fp = popen(shell_cmd, "r");
+                                if (fp == NULL) {
+                                    MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                                }
+
                                 stop_menu_loop = 1;
                             }
                             else{
@@ -891,9 +902,22 @@ void run_menu_loop()
 
                                 /// ------ Load game ------
                                 int ret = emu_save_load_game(1, 0);
+
+                                /// ----- Hud Msg -----
                                 if(ret){
                                     MENU_ERROR_PRINTF("Load Failed\n");
+                                    sprintf(shell_cmd, "%s %d \"          LOAD FAILED\"",
+                                        SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP);
                                 }
+                                else{
+                                    sprintf(shell_cmd, "%s %d \"      LOADED FROM SLOT %d\"",
+                                        SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, state_slot+1);
+                                }
+                                fp = popen(shell_cmd, "r");
+                                if (fp == NULL) {
+                                    MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                                }
+
                                 /*snprintf(hud_msg, sizeof(hud_msg), ret == 0 ? "LOADED" : "FAIL!");
                                 hud_new_msg = 3;*/
                                 stop_menu_loop = 1;
