@@ -47,7 +47,8 @@ const struct in_default_bind in_sdl_defbinds[] __attribute__((weak)) = {
 	{ SDLK_k,      	IN_BINDTYPE_PLAYER12, GBTN_MODE },
 	{ SDLK_q, 		 IN_BINDTYPE_EMU, PEVB_MENU },
 	{ SDLK_TAB,    	IN_BINDTYPE_EMU, PEVB_RESET },
-	{ SDLK_p,     	IN_BINDTYPE_EMU, PEVB_STATE_SAVE },
+	//{ SDLK_p,     	IN_BINDTYPE_EMU, PEVB_STATE_SAVE },
+  { SDLK_F1,       IN_BINDTYPE_EMU, PEVB_STATE_SAVE },
 	{ SDLK_F2,     	IN_BINDTYPE_EMU, PEVB_STATE_LOAD },
 
 	{ SDLK_e,     	IN_BINDTYPE_EMU, PEVB_VOL_DOWN },
