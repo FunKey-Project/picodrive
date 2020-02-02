@@ -494,6 +494,15 @@ int emu_reload_rom(const char *rom_fname_in)
 		PicoIn.opt &= ~POPT_DIS_VDP_FIFO;
 	}
 
+	/* Set input map */
+	if (PicoIn.AHW & PAHW_SMS) {
+		printf("plat set sms input\n");
+		plat_set_sms_input();
+	}
+	else{
+		plat_set_genesis_input();
+	}
+
 	strncpy(rom_fname_loaded, rom_fname, sizeof(rom_fname_loaded)-1);
 	rom_fname_loaded[sizeof(rom_fname_loaded)-1] = 0;
 
@@ -1338,6 +1347,7 @@ void emu_update_input(void)
 
 	if (events)
 		run_events_ui(events);
+
 	if (movie_data)
 		update_movie();
 

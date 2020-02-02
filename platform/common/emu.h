@@ -165,6 +165,8 @@ void pemu_sound_start(void);
 void plat_early_init(void);
 void plat_init(void);
 void plat_finish(void);
+void plat_set_sms_input(void);
+void plat_set_genesis_input(void);
 
 /* used before things blocking for a while (these funcs redraw on return) */
 void plat_status_msg_busy_first(const char *msg);

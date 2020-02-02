@@ -100,6 +100,8 @@ static unsigned char z80_sms_in(unsigned short a)
   unsigned char d = 0;
 
   elprintf(EL_IO, "z80 port %04x read", a);
+  //printf("z80 port %04x read\n", a);
+
   a &= 0xc1;
   switch (a)
   {
@@ -137,6 +139,7 @@ static unsigned char z80_sms_in(unsigned short a)
   }
 
   elprintf(EL_IO, "ret = %02x", d);
+  //printf( "ret = %02x\n", d);
   return d;
 }
 

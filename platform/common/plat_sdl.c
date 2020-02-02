@@ -43,9 +43,9 @@ const struct in_default_bind in_sdl_defbinds[] __attribute__((weak)) = {
 	{ SDLK_x,      	IN_BINDTYPE_PLAYER12, GBTN_Y },
 	{ SDLK_m,      	IN_BINDTYPE_PLAYER12, GBTN_X },
 	{ SDLK_n,      	IN_BINDTYPE_PLAYER12, GBTN_Z },
-	{ SDLK_s, 		 IN_BINDTYPE_PLAYER12, GBTN_START },
+	{ SDLK_s, 		  IN_BINDTYPE_PLAYER12, GBTN_START },
 	{ SDLK_k,      	IN_BINDTYPE_PLAYER12, GBTN_MODE },
-	{ SDLK_q, 		 IN_BINDTYPE_EMU, PEVB_MENU },
+	{ SDLK_q, 		  IN_BINDTYPE_EMU, PEVB_MENU },
 	{ SDLK_TAB,    	IN_BINDTYPE_EMU, PEVB_RESET },
 	//{ SDLK_p,     	IN_BINDTYPE_EMU, PEVB_STATE_SAVE },
   { SDLK_F1,       IN_BINDTYPE_EMU, PEVB_STATE_SAVE },
@@ -67,6 +67,43 @@ const struct in_default_bind in_sdl_defbinds[] __attribute__((weak)) = {
 	{ SDLK_F8,     	IN_BINDTYPE_EMU, PEVB_PICO_SWINP },
 	{ SDLK_BACKSPACE, IN_BINDTYPE_EMU, PEVB_FF },
 	{ 0, 0, 0 }
+};
+
+const struct in_default_bind in_sdl_defbinds_SMS[] __attribute__((weak)) = {
+  { SDLK_u,       IN_BINDTYPE_PLAYER12, GBTN_UP },
+  { SDLK_d,       IN_BINDTYPE_PLAYER12, GBTN_DOWN },
+  { SDLK_l,       IN_BINDTYPE_PLAYER12, GBTN_LEFT },
+  { SDLK_r,       IN_BINDTYPE_PLAYER12, GBTN_RIGHT },
+  { SDLK_y,       IN_BINDTYPE_PLAYER12, GBTN_C },
+  { SDLK_a,       IN_BINDTYPE_PLAYER12, GBTN_C },
+  { SDLK_b,       IN_BINDTYPE_PLAYER12, GBTN_B },
+  { SDLK_x,       IN_BINDTYPE_PLAYER12, GBTN_B },
+  { SDLK_m,       IN_BINDTYPE_PLAYER12, GBTN_X },
+  { SDLK_n,       IN_BINDTYPE_PLAYER12, GBTN_Z },
+  { SDLK_s,       IN_BINDTYPE_PLAYER12, GBTN_START },
+  { SDLK_k,       IN_BINDTYPE_PLAYER12, GBTN_MODE },
+  { SDLK_q,       IN_BINDTYPE_EMU, PEVB_MENU },
+  { SDLK_TAB,     IN_BINDTYPE_EMU, PEVB_RESET },
+  //{ SDLK_p,       IN_BINDTYPE_EMU, PEVB_STATE_SAVE },
+  { SDLK_F1,       IN_BINDTYPE_EMU, PEVB_STATE_SAVE },
+  { SDLK_F2,      IN_BINDTYPE_EMU, PEVB_STATE_LOAD },
+
+  { SDLK_e,       IN_BINDTYPE_EMU, PEVB_VOL_DOWN },
+  { SDLK_c,       IN_BINDTYPE_EMU, PEVB_VOL_UP },
+  { SDLK_w,       IN_BINDTYPE_EMU, PEVB_BRIGHT_DOWN },
+  { SDLK_g,       IN_BINDTYPE_EMU, PEVB_BRIGHT_UP },
+  { SDLK_j,       IN_BINDTYPE_EMU, PEVB_AR_FACT_DOWN },
+  { SDLK_i,       IN_BINDTYPE_EMU, PEVB_AR_FACT_UP },
+  { SDLK_h,       IN_BINDTYPE_EMU, PEVB_DISPMODE },
+
+  { SDLK_F3,      IN_BINDTYPE_EMU, PEVB_SSLOT_PREV },
+  { SDLK_F4,      IN_BINDTYPE_EMU, PEVB_SSLOT_NEXT },
+  { SDLK_F5,      IN_BINDTYPE_EMU, PEVB_SWITCH_RND },
+  { SDLK_F6,      IN_BINDTYPE_EMU, PEVB_PICO_PPREV },
+  { SDLK_F7,      IN_BINDTYPE_EMU, PEVB_PICO_PNEXT },
+  { SDLK_F8,      IN_BINDTYPE_EMU, PEVB_PICO_SWINP },
+  { SDLK_BACKSPACE, IN_BINDTYPE_EMU, PEVB_FF },
+  { 0, 0, 0 }
 };
 
 const struct menu_keymap in_sdl_key_map[] __attribute__((weak)) =
@@ -105,6 +142,15 @@ static const struct in_pdata in_sdl_platform_data = {
 	.joy_map = in_sdl_joy_map,
 	.jmap_size = sizeof(in_sdl_joy_map) / sizeof(in_sdl_joy_map[0]),
 	.key_names = in_sdl_key_names,
+};
+
+static const struct in_pdata in_sdl_platform_data_SMS = {
+  .defbinds = in_sdl_defbinds_SMS,
+  .key_map = in_sdl_key_map,
+  .kmap_size = sizeof(in_sdl_key_map) / sizeof(in_sdl_key_map[0]),
+  .joy_map = in_sdl_joy_map,
+  .jmap_size = sizeof(in_sdl_joy_map) / sizeof(in_sdl_joy_map[0]),
+  .key_names = in_sdl_key_names,
 };
 
 /* YUV stuff */
@@ -1564,8 +1610,8 @@ void plat_init(void)
 	g_screen_ppitch = 320;
 	g_screen_ptr = shadow_fb;
 
-	in_sdl_init(&in_sdl_platform_data, plat_sdl_event_handler);
-	in_probe();
+	/*in_sdl_init(&in_sdl_platform_data, plat_sdl_event_handler);
+	in_probe();*/
 
 
 	init_menu_SDL();
@@ -1574,9 +1620,20 @@ void plat_init(void)
 	bgr_to_uyvy_init();
 }
 
+void plat_set_sms_input(void){
+  in_sdl_init(&in_sdl_platform_data_SMS, plat_sdl_event_handler);
+  in_probe();
+}
+
+void plat_set_genesis_input(void){
+  in_sdl_init(&in_sdl_platform_data, plat_sdl_event_handler);
+  in_probe();
+}
+
 void plat_finish(void)
 {
 	SDL_FreeSurface(virtual_hw_screen);
+	SDL_FreeSurface(sms_game_screen);
 	deinit_menu_SDL();
 	free(shadow_fb);
 	shadow_fb = NULL;
