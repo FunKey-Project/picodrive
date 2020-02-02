@@ -344,7 +344,8 @@ static void system_announce(void)
 	fps = Pico.m.pal ? 50 : 60;
 
 	//emu_status_msg("%s %s / %dFPS%s", tv_standard, sys_name, fps, extra);
-	printf("%s %s / %dFPS%s\n", tv_standard, sys_name, fps, extra);
+	printf("\nSystem Announce: %s, %s / %dFPS%s\n", sys_name, tv_standard, fps, extra);
+	printf("PicoIn.AHW = %d, Pico.m.hardware=%d\n", PicoIn.AHW, Pico.m.hardware);
 }
 
 static void do_region_override(const char *media_fname)
@@ -1331,8 +1332,10 @@ void emu_update_input(void)
 
 	events &= ~prev_events;
 
+	/* SMS */
 	if (PicoIn.AHW == PAHW_PICO)
 		run_events_pico(events);
+
 	if (events)
 		run_events_ui(events);
 	if (movie_data)

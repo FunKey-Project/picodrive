@@ -113,6 +113,7 @@ static unsigned char yuv_u[32 * 2], yuv_v[32 * 2];
 
 SDL_Surface * hw_screen = NULL;
 SDL_Surface * virtual_hw_screen = NULL;
+SDL_Surface * sms_game_screen = NULL;
 
 void clear_screen(SDL_Surface *surface, uint16_t color)
 {
@@ -1345,6 +1346,29 @@ void plat_video_flip(void)
 		if (SDL_MUSTLOCK(plat_sdl_screen))
 			SDL_UnlockSurface(plat_sdl_screen);
 
+		/* Surface with game data */
+		SDL_Surface *game_surface;
+
+		/* Sega Master System -> 256*192 res in 320*240 surface */
+		if (PicoIn.AHW & PAHW_SMS){
+
+			/* Copy sms game pixels */
+			int offset_y = (plat_sdl_screen->h - sms_game_screen->h)/2;
+			int offset_x = (plat_sdl_screen->w - sms_game_screen->w)/2 + 6;
+			int y;
+			for(y=0; y<192; y++){
+				memcpy((uint16_t*)sms_game_screen->pixels + sms_game_screen->w*y,
+				       (uint16_t*)plat_sdl_screen->pixels + plat_sdl_screen->w*(y+offset_y) + offset_x,
+				       sms_game_screen->w*sizeof(uint16_t));
+			}
+
+			game_surface = sms_game_screen;
+		}
+		else{
+			game_surface = plat_sdl_screen;
+		}
+
+
 		/// --------------Optimized Flip depending on aspect ratio -------------
 		static int prev_aspect_ratio;
 		if(prev_aspect_ratio != aspect_ratio || need_screen_cleared){
@@ -1356,35 +1380,36 @@ void plat_video_flip(void)
 
 		switch(aspect_ratio){
 		case ASPECT_RATIOS_TYPE_STRECHED:
-			flip_NNOptimized_LeftAndRightBilinear(plat_sdl_screen, virtual_hw_screen,
+			flip_NNOptimized_LeftAndRightBilinear(game_surface, virtual_hw_screen,
 							      RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
 			break;
 		case ASPECT_RATIOS_TYPE_MANUAL:
-			;uint32_t h_scaled = MIN(plat_sdl_screen->h*RES_HW_SCREEN_HORIZONTAL/plat_sdl_screen->w,
+			;uint32_t h_scaled = MIN(game_surface->h*RES_HW_SCREEN_HORIZONTAL/game_surface->w,
 						 RES_HW_SCREEN_VERTICAL);
 			uint32_t h_zoomed = MIN(h_scaled + aspect_ratio_factor_percent*(RES_HW_SCREEN_VERTICAL - h_scaled)/100,
 						RES_HW_SCREEN_VERTICAL);
-			flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(plat_sdl_screen, virtual_hw_screen,
-									    MAX(plat_sdl_screen->w*h_zoomed/plat_sdl_screen->h, RES_HW_SCREEN_HORIZONTAL),
+			flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(game_surface, virtual_hw_screen,
+									    MAX(game_surface->w*h_zoomed/game_surface->h, RES_HW_SCREEN_HORIZONTAL),
 									    MIN(h_zoomed, RES_HW_SCREEN_VERTICAL));
 			break;
-	    	case ASPECT_RATIOS_TYPE_CROPPED:
-			flip_NNOptimized_AllowOutOfScreen(plat_sdl_screen, virtual_hw_screen,
-							  MAX(plat_sdl_screen->w*RES_HW_SCREEN_VERTICAL/plat_sdl_screen->h, RES_HW_SCREEN_HORIZONTAL),
+		case ASPECT_RATIOS_TYPE_CROPPED:
+			flip_NNOptimized_AllowOutOfScreen(game_surface, virtual_hw_screen,
+							  MAX(game_surface->w*RES_HW_SCREEN_VERTICAL/game_surface->h, RES_HW_SCREEN_HORIZONTAL),
 							  RES_HW_SCREEN_VERTICAL);
 			break;
 		case ASPECT_RATIOS_TYPE_SCALED:
-			flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(plat_sdl_screen, virtual_hw_screen,
+			flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(game_surface, virtual_hw_screen,
 									    RES_HW_SCREEN_HORIZONTAL,
-									    MIN(plat_sdl_screen->h*RES_HW_SCREEN_HORIZONTAL/plat_sdl_screen->w, RES_HW_SCREEN_VERTICAL));
+									    MIN(game_surface->h*RES_HW_SCREEN_HORIZONTAL/game_surface->w, RES_HW_SCREEN_VERTICAL));
 			break;
 		default:
 			printf("Wrong aspect ratio value: %d\n", aspect_ratio);
 			aspect_ratio = ASPECT_RATIOS_TYPE_STRECHED;
-			flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(plat_sdl_screen, virtual_hw_screen,
+			flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(game_surface, virtual_hw_screen,
 									    RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
 			break;
 		}
+
 
 		// Rotate
 		//SDL_Rotate_270(hw_screen, virtual_hw_screen);
@@ -1508,9 +1533,15 @@ void plat_init(void)
 
 	virtual_hw_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
       RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL, 16, 0xFFFF, 0xFFFF, 0xFFFF, 0);
-    if (virtual_hw_screen == NULL) {
-      fprintf(stderr, "virtual_hw_screen failed: %s\n", SDL_GetError());
-    }
+  if (virtual_hw_screen == NULL) {
+    fprintf(stderr, "virtual_hw_screen failed: %s\n", SDL_GetError());
+  }
+
+  sms_game_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
+      256, 192, 16, 0xFFFF, 0xFFFF, 0xFFFF, 0);
+  if (sms_game_screen == NULL) {
+    fprintf(stderr, "sms_game_screen failed: %s\n", SDL_GetError());
+  }
 
 	g_menuscreen_w = plat_sdl_screen->w;
 	g_menuscreen_h = plat_sdl_screen->h;
