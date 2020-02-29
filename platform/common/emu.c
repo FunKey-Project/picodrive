@@ -58,9 +58,9 @@ int need_screen_cleared = 0;
 static short __attribute__((aligned(4))) sndBuffer[2*44100/50];
 
 /* tmp buff to reduce stack usage for plats with small stack */
-static char static_buff[512];
+static char static_buff[1024];
 const char *rom_fname_reload;
-char rom_fname_loaded[512];
+char rom_fname_loaded[1024];
 int reset_timing = 0;
 static unsigned int notice_msg_time;	/* when started showing */
 static char noticeMsg[40];
@@ -113,9 +113,13 @@ static void fname_ext(char *dst, int dstlen, const char *prefix, const char *ext
 
 	*dst = 0;
 	if (prefix) {
-		int len = plat_get_root_dir(dst, dstlen);
+		/*int len = plat_get_root_dir(dst, dstlen);
 		strcpy(dst + len, prefix);
-		prefix_len = len + strlen(prefix);
+		prefix_len = len + strlen(prefix);*/
+
+		/* Saves are in ROM folder */
+		prefix_len = strlen(mRomPath)+1;
+		sprintf(dst, "%s/", mRomPath);
 	}
 
 	p = fname + strlen(fname) - 1;
@@ -879,6 +883,22 @@ int emu_check_save_file(int slot, int *time)
 	return emu_get_save_fname(1, 0, slot, time) ? 1 : 0;
 }
 
+int emu_save_load_game_from_file(int load, char *saveFname){
+	int ret = PicoState(saveFname, !load);
+	if (!ret) {
+#ifdef __GP2X__
+		if (!load) sync();
+#endif
+		//emu_status_msg(load ? "STATE LOADED" : "STATE SAVED");
+	} else {
+		//emu_status_msg(load ? "LOAD FAILED" : "SAVE FAILED");
+		ret = -1;
+	}
+
+	return ret;
+}
+
+
 int emu_save_load_game(int load, int sram)
 {
 	int ret = 0;
@@ -1387,6 +1407,47 @@ void emu_cmn_forced_frame(int no_scale, int do_emu)
 	PicoIn.opt = po_old;
 }
 
+
+
+
+/* Quick save and turn off the console */
+void quick_save_and_poweroff()
+{
+    /* Vars */
+    char shell_cmd[1024];
+    FILE *fp;
+
+    /* Send command to kill any previously scheduled shutdown */
+    sprintf(shell_cmd, "pkill %s", SHELL_CMD_SCHEDULE_POWERDOWN);
+    fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+
+    /* Save  */
+    emu_save_load_game_from_file(0, quick_save_file);
+
+    /* Write quick load file */
+    sprintf(shell_cmd, "%s SDL_NOMOUSE=1 \"%s\" -loadStateFile \"%s\" \"%s\"",
+      SHELL_CMD_WRITE_QUICK_LOAD_CMD, prog_name, quick_save_file, mRomName);
+    printf("Cmd write quick load file:\n  %s\n", shell_cmd);
+    fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+
+    /* Clean Poweroff */
+    sprintf(shell_cmd, "%s", SHELL_CMD_POWERDOWN);
+    fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+
+    /* Exit Emulator */
+    engineState = PGS_Quit;
+}
+
+
 void emu_init(void)
 {
 	char path[512];
@@ -1642,6 +1703,12 @@ void emu_loop(void)
 			timestamp_aim_x3 += target_frametime_x3;
 			diff = timestamp_aim_x3 - timestamp_x3;
 		}
+
+        /* Quick save and poweroff */
+        if(mQuickSaveAndPoweroff){
+		quick_save_and_poweroff();
+		mQuickSaveAndPoweroff = 0;
+        }
 
 		emu_update_input();
 		if (skip) {

@@ -87,6 +87,12 @@ extern int reset_timing;
 extern int flip_after_sync;
 extern int show_fps_bypass;
 extern int need_screen_cleared;
+extern int mQuickSaveAndPoweroff;
+
+extern char *prog_name;
+extern char *mRomName;
+extern char *mRomPath;
+extern char *quick_save_file;
 
 #define PICO_PEN_ADJUST_X 4
 #define PICO_PEN_ADJUST_Y 2
@@ -94,7 +100,7 @@ extern int pico_pen_x, pico_pen_y;
 extern int pico_inp_mode;
 
 extern const char *rom_fname_reload;		// ROM to try loading on next PGS_ReloadRom
-extern char rom_fname_loaded[512];		// currently loaded ROM filename
+extern char rom_fname_loaded[1024];		// currently loaded ROM filename
 
 // engine states
 extern int engineState;
@@ -118,6 +124,7 @@ void  emu_loop(void);
 int   emu_reload_rom(const char *rom_fname_in);
 int   emu_swap_cd(const char *fname);
 int   emu_save_load_game(int load, int sram);
+int   emu_save_load_game_from_file(int load, char *saveFname);
 void  emu_reset_game(void);
 
 void  emu_prep_defconfig(void);
