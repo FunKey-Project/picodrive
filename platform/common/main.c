@@ -152,6 +152,9 @@ int main(int argc, char *argv[])
 	/* Init Signals */
 	signal(SIGUSR1, handle_sigusr1);
 
+    /* Set env var for no mouse */
+    putenv(strdup("SDL_NOMOUSE=1"));
+
 	plat_early_init();
 
 	in_init();
@@ -171,42 +174,42 @@ int main(int argc, char *argv[])
 		if (emu_reload_rom(rom_fname_reload)) {
 			engineState = PGS_Running;
 
-		    /* Load slot */
-		    if(load_state_slot != -1){
-		      printf("LOADING FROM SLOT %d...\n", load_state_slot+1);
-		      char fname[1024];
-		      emu_save_load_game(1, 0);
-		      printf("LOADED FROM SLOT %d\n", load_state_slot+1);
-		      load_state_slot = -1;
-		    }
-		    /* Load file */
-		    else if(load_state_file != NULL){
-		      printf("LOADING FROM FILE %s...\n", load_state_file);
-		      emu_save_load_game_from_file(1, load_state_file);
-		      printf("LOADED FROM SLOT %s\n", load_state_file);
-		      load_state_file = NULL;
-		    }
-		    /* Load quick save file */
-		    else if(access( quick_save_file, F_OK ) != -1){
-		      printf("Found quick save file: %s\n", quick_save_file);
+			/* Load slot */
+			if(load_state_slot != -1){
+				printf("LOADING FROM SLOT %d...\n", load_state_slot+1);
+				char fname[1024];
+				emu_save_load_game(1, 0);
+				printf("LOADED FROM SLOT %d\n", load_state_slot+1);
+				load_state_slot = -1;
+			}
+			/* Load file */
+			else if(load_state_file != NULL){
+				printf("LOADING FROM FILE %s...\n", load_state_file);
+				emu_save_load_game_from_file(1, load_state_file);
+				printf("LOADED FROM SLOT %s\n", load_state_file);
+				load_state_file = NULL;
+			}
+			/* Load quick save file */
+			else if(access( quick_save_file, F_OK ) != -1){
+				printf("Found quick save file: %s\n", quick_save_file);
 
-		      int resume = launch_resume_menu_loop();
-		      if(resume == RESUME_YES){
-		        printf("Resume game from quick save file: %s\n", quick_save_file);
-		        emu_save_load_game_from_file(1, quick_save_file);
-		      }
-		      else{
-		        printf("Reset game\n");
-		      }
-		    }
+				int resume = launch_resume_menu_loop();
+				if(resume == RESUME_YES){
+					printf("Resume game from quick save file: %s\n", quick_save_file);
+					emu_save_load_game_from_file(1, quick_save_file);
+				}
+				else{
+					printf("Reset game\n");
 
-		    /* Remove quicksave file if present */
-		    if (remove(quick_save_file) == 0){
-		          printf("Deleted successfully: %s\n", quick_save_file);
-		    }
-		    else{
-		        printf("Unable to delete the file: %s\n", quick_save_file);
-		    }
+					/* Remove quicksave file if present */
+					if (remove(quick_save_file) == 0){
+						printf("Deleted successfully: %s\n", quick_save_file);
+					}
+					else{
+						printf("Unable to delete the file: %s\n", quick_save_file);
+					}
+				}
+			}
 		}
 	}
 
