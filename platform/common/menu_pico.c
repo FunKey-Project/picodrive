@@ -1098,7 +1098,7 @@ int launch_resume_menu_loop()
 
                     case SDLK_q:
                     case SDLK_ESCAPE:
-                        stop_menu_loop = 1;
+                        /*stop_menu_loop = 1;*/
                         break;
 
                     case SDLK_u:
