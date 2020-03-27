@@ -3,7 +3,7 @@ DEBUG ?= 0
 CFLAGS += -Wall -g
 CFLAGS += -I.
 ifeq "$(DEBUG)" "0"
-CFLAGS += -O2 -DNDEBUG
+CFLAGS += -O3 -DNDEBUG
 endif
 
 # This is actually needed, bevieve me.
