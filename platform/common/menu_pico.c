@@ -16,6 +16,7 @@
 #include "emu.h"
 #include "menu_pico.h"
 #include "input_pico.h"
+#include "../libpicofe/input.h"
 #include "version.h"
 
 #include <pico/pico_int.h>
@@ -685,6 +686,21 @@ void run_menu_loop()
 
     memcpy(backup_hw_screen->pixels, (uint16_t*) virtual_hw_screen->pixels,
             RES_HW_SCREEN_HORIZONTAL * RES_HW_SCREEN_VERTICAL * sizeof(uint16_t));
+
+    /// ------ Wait for menu UP key event ------
+    int actions[IN_BINDTYPE_COUNT] = { 0, };
+    while(event.type != SDL_KEYUP || event.key.keysym.sym != SDLK_q){
+        while (SDL_PollEvent(&event)){
+            SDL_PushEvent(&event);
+            in_update(actions);
+        }
+
+        /* 500ms timeout */
+        if(SDL_GetTicks() - cur_ms > 500){
+            MENU_ERROR_PRINTF("Timeout waiting for SDLK_q UP\n");
+            break;
+        }
+    }
 
     /// -------- Main loop ---------
     while (!stop_menu_loop)
@@ -2328,8 +2344,8 @@ void menu_loop_funkey(void)
 		if (engineState == PGS_Menu)
 			engineState = PGS_Running;
 		/* wait until menu, ok, back is released */
-		while (in_menu_wait_any(NULL, 50) & (PBTN_MENU|PBTN_MOK|PBTN_MBACK))
-			;
+		/*while (in_menu_wait_any(NULL, 50) & (PBTN_MENU|PBTN_MOK|PBTN_MBACK))
+			;*/
 	}
 
 	in_set_config_int(0, IN_CFG_BLOCKING, 0);
