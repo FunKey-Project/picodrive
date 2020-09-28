@@ -1630,10 +1630,10 @@ void plat_video_flip(void)
 		}
 
 		switch(aspect_ratio){
-		case ASPECT_RATIOS_TYPE_STRECHED:
+		case ASPECT_RATIOS_TYPE_STRETCHED:
 			if(game_surface->w == 320 && game_surface->h < RES_HW_SCREEN_VERTICAL){
-				flip_Downscale_OptimizedWidth320_mergeUpDown(game_surface, virtual_hw_screen,
-									     RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
+			  flip_Downscale_OptimizedWidth320_mergeUpDown(game_surface, virtual_hw_screen,
+								       RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
 			}
 			else if(game_surface->w == 320){
 				flip_Downscale_LeftRightGaussianFilter_OptimizedWidth320(game_surface, virtual_hw_screen,
@@ -1666,11 +1666,11 @@ void plat_video_flip(void)
 									    MIN(game_surface->h*RES_HW_SCREEN_HORIZONTAL/game_surface->w, RES_HW_SCREEN_VERTICAL));
 			break;
 		default:
-		  printf("Wrong aspect ratio value: %d\n", aspect_ratio);
-		  aspect_ratio = ASPECT_RATIOS_TYPE_STRECHED;
-		  flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(game_surface, virtual_hw_screen,
-								      RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
-		  break;
+			printf("Wrong aspect ratio value: %d\n", aspect_ratio);
+			aspect_ratio = ASPECT_RATIOS_TYPE_STRETCHED;
+			flip_NNOptimized_LeftRightUpDownBilinear_Optimized8(game_surface, virtual_hw_screen,
+									    RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
+			break;
 		}
 
 
