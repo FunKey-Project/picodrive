@@ -180,7 +180,7 @@ int aspect_ratio = ASPECT_RATIOS_TYPE_STRETCHED;
 int aspect_ratio_factor_percent = 50;
 int aspect_ratio_factor_step = 10;
 
-int quick_load_slot_chosen = 0;
+static int quick_load_slot_chosen = 0;
 
 #undef X
 #define X(a, b) b,
