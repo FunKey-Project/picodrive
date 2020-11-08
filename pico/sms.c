@@ -178,11 +178,11 @@ static void write_bank(unsigned short a, unsigned char d)
   switch (a & 0x0f)
   {
     case 0x0c:
-      elprintf(EL_STATUS|EL_ANOMALY, "%02x written to control reg!", d);
+      //elprintf(EL_STATUS|EL_ANOMALY, "%02x written to control reg!", d);
       break;
     case 0x0d:
-      if (d != 0)
-        elprintf(EL_STATUS|EL_ANOMALY, "bank0 changed to %d!", d);
+      /*if (d != 0)
+        elprintf(EL_STATUS|EL_ANOMALY, "bank0 changed to %d!", d);*/
       break;
     case 0x0e:
       d &= bank_mask;
