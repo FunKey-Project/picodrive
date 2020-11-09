@@ -1730,8 +1730,10 @@ void plat_video_menu_end(void)
 		if (SDL_MUSTLOCK(plat_sdl_screen))
 			SDL_UnlockSurface(plat_sdl_screen);
 		flip_NNOptimized_LeftAndRightBilinear(plat_sdl_screen, virtual_hw_screen, RES_HW_SCREEN_HORIZONTAL, RES_HW_SCREEN_VERTICAL);
-		//SDL_Flip(hw_screen);
-		SDL_Rotate_270(hw_screen, virtual_hw_screen);
+		
+    memcpy(hw_screen->pixels, virtual_hw_screen->pixels, hw_screen->w*hw_screen->h*sizeof(uint16_t));
+    SDL_Flip(hw_screen);
+		//SDL_Rotate_270(hw_screen, virtual_hw_screen);
 		//SDL_Flip(plat_sdl_screen);
 	}
 	g_menuscreen_ptr = NULL;

@@ -1472,6 +1472,10 @@ static void cdload_progress_cb(const char *fname, int percent)
 
 void menu_romload_prepare(const char *rom_name)
 {
+#ifndef ALLOW_TEXT_OUT
+    return;
+#endif //ALLOW_TEXT_OUT
+
 	const char *p = rom_name + strlen(rom_name);
 
 	while (p > rom_name && *p != '/')
@@ -1492,6 +1496,10 @@ void menu_romload_prepare(const char *rom_name)
 
 void menu_romload_end(void)
 {
+#ifndef ALLOW_TEXT_OUT
+    return;
+#endif //ALLOW_TEXT_OUT
+
 	PicoCartLoadProgressCB = NULL;
 	PicoCDLoadProgressCB = NULL;
 
