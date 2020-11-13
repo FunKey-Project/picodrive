@@ -116,7 +116,8 @@ int main(int argc, char *argv[])
 		switch (engineState)
 		{
 			case PGS_Menu:
-				menu_loop();
+				//menu_loop();
+				menu_loop_funkey();
 				break;
 
 			case PGS_TrayMenu:

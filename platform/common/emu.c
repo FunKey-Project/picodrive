@@ -1087,6 +1087,11 @@ static void do_turbo(unsigned short *pad, int acts)
 
 static void run_events_ui(unsigned int which)
 {
+	char shell_cmd[100];
+	FILE *fp;
+	//emu_action_old = emu_action;
+	//printf("New event: %d\n", which);
+
 	if (which & (PEV_STATE_LOAD|PEV_STATE_SAVE))
 	{
 		int do_it = 1;
@@ -1129,6 +1134,125 @@ static void run_events_ui(unsigned int which)
 	if (which & PEV_SWITCH_RND)
 	{
 		plat_video_toggle_renderer(1, 0);
+	}
+	if (which & PEV_VOL_DOWN)
+	{
+		printf("PEV_VOL_DOWN\r\n");
+		/// ----- Compute new value -----
+		volume_percentage = (volume_percentage < STEP_CHANGE_VOLUME)?
+			0:(volume_percentage-STEP_CHANGE_VOLUME);
+		/// ----- HUD msg ------
+		char txt[100];
+		sprintf(txt, "VOLUME %d%%", volume_percentage);
+		plat_status_msg_busy_first(txt);
+		/// ----- Shell cmd ----
+		sprintf(shell_cmd, "%s %d", SHELL_CMD_VOLUME_SET, volume_percentage);
+		fp = popen(shell_cmd, "r");
+		if (fp == NULL) {
+			printf("Failed to run command %s\n", shell_cmd);
+		}
+	}
+	if (which & PEV_VOL_UP)
+	{
+		printf("PEV_VOL_UP\r\n");
+		/// ----- Compute new value -----
+		volume_percentage = (volume_percentage > 100 - STEP_CHANGE_VOLUME)?
+			100:(volume_percentage+STEP_CHANGE_VOLUME);
+		/// ----- HUD msg ------
+		char txt[100];
+		sprintf(txt, "VOLUME %d%%", volume_percentage);
+		plat_status_msg_busy_first(txt);
+		/// ----- Shell cmd ----
+		sprintf(shell_cmd, "%s %d", SHELL_CMD_VOLUME_SET, volume_percentage);
+		fp = popen(shell_cmd, "r");
+		if (fp == NULL) {
+			printf("Failed to run command %s\n", shell_cmd);
+		}
+	}
+	if (which & PEV_BRIGHT_UP)
+	{
+		printf("PEV_BRIGHT_UP\r\n");
+		/// ----- Compute new value -----
+		brightness_percentage = (brightness_percentage > 100 - STEP_CHANGE_BRIGHTNESS)?
+			100:(brightness_percentage+STEP_CHANGE_BRIGHTNESS);
+		/// ----- HUD msg ------
+		char txt[100];
+		sprintf(txt, "BRIGHTNESS %d%%", brightness_percentage);
+		plat_status_msg_busy_first(txt);
+		/// ----- Shell cmd ----
+		sprintf(shell_cmd, "%s %d", SHELL_CMD_BRIGHTNESS_SET, brightness_percentage);
+		fp = popen(shell_cmd, "r");
+		if (fp == NULL) {
+			printf("Failed to run command %s\n", shell_cmd);
+		}
+	}
+	if (which & PEV_BRIGHT_DOWN)
+	{
+		printf("PEV_BRIGHT_DOWN\r\n");
+		/// ----- Compute new value -----
+		brightness_percentage = (brightness_percentage < STEP_CHANGE_BRIGHTNESS)?
+			0:(brightness_percentage-STEP_CHANGE_BRIGHTNESS);
+		/// ----- HUD msg ------
+		char txt[100];
+		sprintf(txt, "BRIGHTNESS %d%%", brightness_percentage);
+		plat_status_msg_busy_first(txt);
+		/// ----- Shell cmd ----
+		sprintf(shell_cmd, "%s %d", SHELL_CMD_BRIGHTNESS_SET, brightness_percentage);
+		fp = popen(shell_cmd, "r");
+		if (fp == NULL) {
+			printf("Failed to run command %s\n", shell_cmd);
+		}
+	}
+	if (which & PEV_AR_FACT_UP)
+	{
+		printf("PEV_AR_FACT_UP\r\n");
+		/// ----- Compute new value -----
+		if(aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
+			aspect_ratio_factor_percent = (aspect_ratio_factor_percent+aspect_ratio_factor_step<100)?
+				aspect_ratio_factor_percent+aspect_ratio_factor_step:100;
+			need_screen_cleared = 1;
+		}
+		else{
+			aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
+		}
+		aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
+		/// ----- HUD msg ------
+		char txt[100];
+		sprintf(txt, "DISPLAY MODE: MANUAL ZOOM - %d%%", aspect_ratio_factor_percent);
+		plat_status_msg_busy_first(txt);
+	}
+	if (which & PEV_AR_FACT_DOWN)
+	{
+		printf("PEV_AR_FACT_DOWN\r\n");
+		/// ----- Compute new value -----
+		if(aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
+			aspect_ratio_factor_percent = (aspect_ratio_factor_percent>aspect_ratio_factor_step)?
+				aspect_ratio_factor_percent-aspect_ratio_factor_step:0;
+			need_screen_cleared = 1;
+		}
+		else{
+			aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
+		}
+		aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
+		/// ----- HUD msg ------
+		char txt[100];
+		sprintf(txt, "DISPLAY MODE: MANUAL ZOOM - %d%%", aspect_ratio_factor_percent);
+		plat_status_msg_busy_first(txt);
+	}
+	if (which & PEV_DISPMODE)
+	{
+		printf("PEV_DISPMODE\r\n");
+		/// ----- Compute new value -----
+		aspect_ratio = (aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
+		/// ----- HUD msg ------
+		char txt[100];
+		if(aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
+			sprintf(txt, "DISPLAY MODE: MANUAL ZOOM - %d%%", aspect_ratio_factor_percent);
+		}
+		else{
+			sprintf(txt, "DISPLAY MODE: %s", aspect_ratio_name[aspect_ratio]);
+		}
+		plat_status_msg_busy_first(txt);
 	}
 	if (which & (PEV_SSLOT_PREV|PEV_SSLOT_NEXT))
 	{
@@ -1413,12 +1537,18 @@ void emu_loop(void)
 				plat_status_msg_clear();
 				plat_video_flip();
 				plat_status_msg_clear(); /* Do it again in case of double buffering */
+				plat_video_flip();
+				plat_status_msg_clear(); /* Do it again in case of triple buffering */
 				notice_msg = NULL;
 			}
 			else {
 				int sum = noticeMsg[0] + noticeMsg[1] + noticeMsg[2];
 				if (sum != noticeMsgSum) {
 					plat_status_msg_clear();
+					plat_video_flip();
+					plat_status_msg_clear(); /* Do it again in case of double buffering */
+					plat_video_flip();
+					plat_status_msg_clear(); /* Do it again in case of triple buffering */
 					noticeMsgSum = sum;
 				}
 				notice_msg = noticeMsg;

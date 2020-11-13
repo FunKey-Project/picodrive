@@ -1,7 +1,65 @@
 #ifndef __MENU_PICO_H__
 #define __MENU_PICO_H__
 
+#include <SDL/SDL.h>
 #include "../libpicofe/menu.h"
+
+typedef enum{
+    MENU_TYPE_VOLUME,
+    MENU_TYPE_BRIGHTNESS,
+    MENU_TYPE_SAVE,
+    MENU_TYPE_LOAD,
+    MENU_TYPE_ASPECT_RATIO,
+    MENU_TYPE_EXIT,
+    MENU_TYPE_POWERDOWN,
+    NB_MENU_TYPES,
+} ENUM_MENU_TYPE;
+
+
+///------ Definition of the different aspect ratios
+#define ASPECT_RATIOS \
+    X(ASPECT_RATIOS_TYPE_MANUAL, "MANUAL ZOOM") \
+    X(ASPECT_RATIOS_TYPE_STRECHED, "STRECHED") \
+    X(ASPECT_RATIOS_TYPE_CROPPED, "CROPPED") \
+    X(ASPECT_RATIOS_TYPE_SCALED, "SCALED") \
+    X(NB_ASPECT_RATIOS_TYPES, "")
+
+////------ Enumeration of the different aspect ratios ------
+#undef X
+#define X(a, b) a,
+typedef enum {ASPECT_RATIOS} ENUM_ASPECT_RATIOS_TYPES;
+
+////------ Defines to be shared -------
+#define STEP_CHANGE_VOLUME          10
+#define STEP_CHANGE_BRIGHTNESS      10
+
+////------ Menu commands -------
+#define SHELL_CMD_VOLUME_GET        "/root/shell_cmds/volume_get.sh"
+#define SHELL_CMD_VOLUME_SET        "/root/shell_cmds/volume_set.sh"
+#define SHELL_CMD_BRIGHTNESS_GET    "/root/shell_cmds/brightness_get.sh"
+#define SHELL_CMD_BRIGHTNESS_SET    "/root/shell_cmds/brightness_set.sh"
+#define SHELL_CMD_POWERDOWN         "shutdown -h now"
+
+#define MAXPATHLEN	512
+
+extern void SDL_Rotate_270(SDL_Surface * hw_surface, SDL_Surface * virtual_hw_surface);
+
+void init_menu_SDL();
+void deinit_menu_SDL();
+void init_menu_zones();
+void menu_loop_funkey(void);
+void run_menu_loop();
+void init_menu_system_values();
+
+
+extern int volume_percentage;
+extern int brightness_percentage;
+
+extern const char *aspect_ratio_name[];
+extern int aspect_ratio;
+extern int aspect_ratio_factor_percent;
+extern int aspect_ratio_factor_step;
+
 
 typedef enum
 {
@@ -103,5 +161,6 @@ void menu_loop(void);
 int menu_loop_tray(void);
 void menu_romload_prepare(const char *rom_name);
 void menu_romload_end(void);
+int main_menu_handler(int id, int keys);
 
 #endif // __MENU_PICO_H__

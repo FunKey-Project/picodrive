@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <SDL/SDL_ttf.h>
+#include <SDL/SDL_image.h>
 
 #include "emu.h"
 #include "menu_pico.h"
@@ -68,6 +72,926 @@ static const char *men_dummy[] = { NULL };
 #define MENU_OPTIONS_GFX
 #define MENU_OPTIONS_ADV
 #endif
+
+
+
+
+
+
+
+
+
+
+#if 1
+
+
+/// -------------- DEFINES --------------
+//#define MENU_DEBUG
+#define MENU_ERROR
+
+#ifdef MENU_DEBUG
+#define MENU_DEBUG_PRINTF(...)   printf(__VA_ARGS__);
+#else
+#define MENU_DEBUG_PRINTF(...)
+#endif //MENU_DEBUG
+
+#ifdef MENU_ERROR
+#define MENU_ERROR_PRINTF(...)   printf(__VA_ARGS__);
+#else
+#define MENU_ERROR_PRINTF(...)
+#endif //MENU_ERROR
+
+#define SCREEN_HORIZONTAL_SIZE      240
+#define SCREEN_VERTICAL_SIZE        240
+
+#define SCROLL_SPEED_PX             240 //This means no anumations but also no tearing effect
+#define FPS_MENU                    30
+
+#define MENU_ZONE_WIDTH             SCREEN_HORIZONTAL_SIZE
+#define MENU_ZONE_HEIGHT            SCREEN_VERTICAL_SIZE
+
+#define MENU_FONT_NAME_TITLE        "/usr/games/menu_resources/OpenSans-Bold.ttf"
+#define MENU_FONT_SIZE_TITLE        22
+#define MENU_FONT_NAME_INFO         "/usr/games/menu_resources/OpenSans-Bold.ttf"
+#define MENU_FONT_SIZE_INFO         16
+#define MENU_FONT_NAME_SMALL_INFO   "/usr/games/menu_resources/OpenSans-Regular.ttf"
+#define MENU_FONT_SIZE_SMALL_INFO   13
+#define MENU_PNG_BG_PATH            "/usr/games/menu_resources/zone_bg.png"
+
+#define GRAY_MAIN_R                 85
+#define GRAY_MAIN_G                 85
+#define GRAY_MAIN_B                 85
+#define WHITE_MAIN_R                236
+#define WHITE_MAIN_G                236
+#define WHITE_MAIN_B                236
+
+#define MAX_SAVE_SLOTS              9
+
+
+
+/// -------------- STATIC VARIABLES --------------
+extern SDL_Surface * hw_screen;
+SDL_Surface * virtual_hw_screen;
+
+static int backup_key_repeat_delay, backup_key_repeat_interval;
+static SDL_Surface * backup_hw_screen = NULL;
+
+static TTF_Font *menu_title_font = NULL;
+static TTF_Font *menu_info_font = NULL;
+static TTF_Font *menu_small_info_font = NULL;
+static SDL_Surface ** menu_zone_surfaces = NULL;
+static int * idx_menus = NULL;
+static int nb_menu_zones = 0;
+
+static int stop_menu_loop = 0;
+
+static SDL_Color text_color = {GRAY_MAIN_R, GRAY_MAIN_G, GRAY_MAIN_B};
+static int padding_y_from_center_menu_zone = 18;
+static uint16_t width_progress_bar = 100;
+static uint16_t height_progress_bar = 20;
+static uint16_t x_volume_bar = 0;
+static uint16_t y_volume_bar = 0;
+static uint16_t x_brightness_bar = 0;
+static uint16_t y_brightness_bar = 0;
+
+int volume_percentage = 0;
+int brightness_percentage = 0;
+
+#undef X
+#define X(a, b) b,
+const char *aspect_ratio_name[] = {ASPECT_RATIOS};
+int aspect_ratio = ASPECT_RATIOS_TYPE_STRECHED;
+int aspect_ratio_factor_percent = 50;
+int aspect_ratio_factor_step = 10;
+
+/*tatic uint8_t idx_save_slot = 0;
+static uint8_t idx_load_slot = 0;*/
+
+/// -------------- STATIC FUNCTIONS DECLARATION --------------
+//static int emu_save_load_game(int load, int unused);
+
+/// -------------- FUNCTIONS IMPLEMENTATION --------------
+void init_menu_SDL(){
+    /// ----- Loading the fonts -----
+    menu_title_font = TTF_OpenFont(MENU_FONT_NAME_TITLE, MENU_FONT_SIZE_TITLE);
+    if(!menu_title_font){
+        MENU_ERROR_PRINTF("ERROR in init_menu_SDL: Could not open menu font %s, %s\n", MENU_FONT_NAME_TITLE, SDL_GetError());
+    }
+    menu_info_font = TTF_OpenFont(MENU_FONT_NAME_INFO, MENU_FONT_SIZE_INFO);
+    if(!menu_info_font){
+        MENU_ERROR_PRINTF("ERROR in init_menu_SDL: Could not open menu font %s, %s\n", MENU_FONT_NAME_INFO, SDL_GetError());
+    }
+    menu_small_info_font = TTF_OpenFont(MENU_FONT_NAME_SMALL_INFO, MENU_FONT_SIZE_SMALL_INFO);
+    if(!menu_small_info_font){
+        MENU_ERROR_PRINTF("ERROR in init_menu_SDL: Could not open menu font %s, %s\n", MENU_FONT_NAME_SMALL_INFO, SDL_GetError());
+    }
+
+    /// ----- Copy virtual_hw_screen at init ------
+    backup_hw_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        virtual_hw_screen->w, virtual_hw_screen->h, 32, 0, 0, 0, 0);
+    if(SDL_BlitSurface(virtual_hw_screen, NULL, backup_hw_screen, NULL)){
+        MENU_ERROR_PRINTF("ERROR Could not copy virtual_hw_screen: %s\n", SDL_GetError());
+    }
+
+    virtual_hw_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        hw_screen->w, hw_screen->h, 16, 0, 0, 0, 0);
+
+    /// ------ Save prev key repeat params and set new Key repeat -------
+    SDL_GetKeyRepeat(&backup_key_repeat_delay, &backup_key_repeat_interval);
+    if(SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL)){
+        MENU_ERROR_PRINTF("ERROR with SDL_EnableKeyRepeat: %s\n", SDL_GetError());
+    }
+}
+
+void deinit_menu_SDL(){
+    /// ------ Close font -------
+    TTF_CloseFont(menu_title_font);
+    TTF_CloseFont(menu_info_font);
+    TTF_CloseFont(menu_small_info_font);
+
+    /// ------ Free Surfaces -------
+    for(int i=0; i < nb_menu_zones; i++){
+        SDL_FreeSurface(menu_zone_surfaces[i]);
+    }
+    SDL_FreeSurface(backup_hw_screen);
+
+    /// ------ reset initial key repeat values ------
+    if(SDL_EnableKeyRepeat(backup_key_repeat_delay, backup_key_repeat_interval)){
+        MENU_ERROR_PRINTF("ERROR with SDL_EnableKeyRepeat: %s\n", SDL_GetError());
+    }
+}
+
+
+void draw_progress_bar(SDL_Surface * surface, uint16_t x, uint16_t y, uint16_t width,
+                        uint16_t height, uint8_t percentage, uint16_t nb_bars){
+    /// ------ Init Variables ------
+    uint16_t line_width = 1; //px
+    uint16_t padding_bars_ratio = 3;
+    uint16_t nb_full_bars = 0;
+
+    /// ------ Check values ------
+    percentage = (percentage > 100)?100:percentage;
+    x = (x > (surface->w-1))?(surface->w-1):x;
+    y = (y > surface->h-1)?(surface->h-1):y;
+    width = (width < line_width*2+1)?(line_width*2+1):width;
+    width = (width > surface->w-x-1)?(surface->w-x-1):width;
+    height = (height < line_width*2+1)?(line_width*2+1):height;
+    height = (height > surface->h-y-1)?(surface->h-y-1):height;
+    uint16_t nb_bars_max = ( width * padding_bars_ratio  /  (line_width*2+1) + 1 ) / (padding_bars_ratio+1);
+    nb_bars = (nb_bars > nb_bars_max)?nb_bars_max:nb_bars;
+    uint16_t bar_width = (width / nb_bars)*padding_bars_ratio/(padding_bars_ratio+1)+1;
+    uint16_t bar_padding_x = bar_width/padding_bars_ratio;
+    nb_full_bars = nb_bars*percentage/100;
+
+    /// ------ draw full bars ------
+    for (int i = 0; i < nb_full_bars; ++i)
+    {
+        /// ---- draw one bar ----
+        //MENU_DEBUG_PRINTF("Drawing filled bar %d\n", i);
+        SDL_Rect rect = {x+ i*(bar_width +bar_padding_x),
+            y, bar_width, height};
+        SDL_FillRect(surface, &rect, SDL_MapRGB(surface->format, GRAY_MAIN_R, GRAY_MAIN_G, GRAY_MAIN_B));
+    }
+
+    /// ------ draw full bars ------
+    for (int i = 0; i < (nb_bars-nb_full_bars); ++i)
+    {
+        /// ---- draw one bar ----
+        //MENU_DEBUG_PRINTF("Drawing empty bar %d\n", i);
+        SDL_Rect rect = {x+ i*(bar_width +bar_padding_x) + nb_full_bars*(bar_width +bar_padding_x),
+            y, bar_width, height};
+        SDL_FillRect(surface, &rect, SDL_MapRGB(surface->format, GRAY_MAIN_R, GRAY_MAIN_G, GRAY_MAIN_B));
+
+        SDL_Rect rect2 = {x+ i*(bar_width +bar_padding_x) + line_width + nb_full_bars*(bar_width +bar_padding_x),
+            y + line_width, bar_width - line_width*2, height - line_width*2};
+        SDL_FillRect(surface, &rect2, SDL_MapRGB(surface->format, WHITE_MAIN_R, WHITE_MAIN_R, WHITE_MAIN_R));
+    }
+
+
+}
+
+
+void add_menu_zone(ENUM_MENU_TYPE menu_type){
+    /// ------ Increase nb of menu zones -------
+    nb_menu_zones++;
+
+    /// ------ Realoc idx Menus array -------
+    if(!idx_menus){
+        idx_menus = malloc(nb_menu_zones*sizeof(int));
+        menu_zone_surfaces = malloc(nb_menu_zones*sizeof(SDL_Surface*));
+    }
+    else{
+        int *temp = realloc(idx_menus, nb_menu_zones*sizeof(int));
+        idx_menus = temp;
+        menu_zone_surfaces = realloc(menu_zone_surfaces, nb_menu_zones*sizeof(SDL_Surface*));
+    }
+    idx_menus[nb_menu_zones-1] = menu_type;
+
+    /// ------ Reinit menu surface with height increased -------
+    menu_zone_surfaces[nb_menu_zones-1] = IMG_Load(MENU_PNG_BG_PATH);
+    if(!menu_zone_surfaces[nb_menu_zones-1]) {
+        MENU_ERROR_PRINTF("ERROR IMG_Load: %s\n", IMG_GetError());
+    }
+    /// --------- Init Common Variables --------
+    SDL_Surface *text_surface = NULL;
+    SDL_Surface *surface = menu_zone_surfaces[nb_menu_zones-1];
+    SDL_Rect text_pos;
+
+    /// --------- Add new zone ---------
+    switch(menu_type){
+    case MENU_TYPE_VOLUME:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_VOLUME\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "VOLUME", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+
+        x_volume_bar = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - width_progress_bar)/2;
+        y_volume_bar = surface->h - MENU_ZONE_HEIGHT/2 - height_progress_bar/2 + padding_y_from_center_menu_zone;
+        draw_progress_bar(surface, x_volume_bar, y_volume_bar,
+            width_progress_bar, height_progress_bar, 0, 100/STEP_CHANGE_VOLUME);
+        break;
+    case MENU_TYPE_BRIGHTNESS:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_BRIGHTNESS\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "BRIGHTNESS", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+
+        x_brightness_bar = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - width_progress_bar)/2;
+        y_brightness_bar = surface->h - MENU_ZONE_HEIGHT/2 - height_progress_bar/2 + padding_y_from_center_menu_zone;
+        draw_progress_bar(surface, x_brightness_bar, y_brightness_bar,
+            width_progress_bar, height_progress_bar, 0, 100/STEP_CHANGE_BRIGHTNESS);
+        break;
+    case MENU_TYPE_SAVE:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_SAVE\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "SAVE", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone*2;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+        break;
+    case MENU_TYPE_LOAD:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_LOAD\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "LOAD", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone*2;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+        break;
+    case MENU_TYPE_ASPECT_RATIO:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_ASPECT_RATIO\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "ASPECT RATIO", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+        break;
+    case MENU_TYPE_EXIT:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_EXIT\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "EXIT GAME", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+        break;
+    case MENU_TYPE_POWERDOWN:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_POWERDOWN\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "POWERDOWN", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+        break;
+    default:
+        MENU_DEBUG_PRINTF("Warning - In add_menu_zone, unknown MENU_TYPE: %d\n", menu_type);
+        break;
+    }
+
+    /// ------ Free Surfaces -------
+    SDL_FreeSurface(text_surface);
+}
+
+void init_menu_zones(){
+    /// Init Volume Menu
+    add_menu_zone(MENU_TYPE_VOLUME);
+    /// Init Brightness Menu
+    add_menu_zone(MENU_TYPE_BRIGHTNESS);
+    /// Init Save Menu
+    add_menu_zone(MENU_TYPE_SAVE);
+    /// Init Load Menu
+    add_menu_zone(MENU_TYPE_LOAD);
+    /// Init Aspect Ratio Menu
+    add_menu_zone(MENU_TYPE_ASPECT_RATIO);
+    /// Init Exit Menu
+    add_menu_zone(MENU_TYPE_EXIT);
+    /// Init Powerdown Menu
+    //add_menu_zone(MENU_TYPE_POWERDOWN);
+}
+
+
+void init_menu_system_values(){
+    FILE *fp;
+    char res[100];
+
+    /// ------- Get system volume percentage --------
+    fp = popen(SHELL_CMD_VOLUME_GET, "r");
+    if (fp == NULL) {
+        MENU_ERROR_PRINTF("Failed to run command %s\n", SHELL_CMD_VOLUME_GET );
+        volume_percentage = 50; ///wrong value: setting default to 50
+    }
+    else{
+        fgets(res, sizeof(res)-1, fp);
+
+        /// Check if Volume is a number (at least the first char)
+        if(res[0] < '0' || res[0] > '9'){
+            MENU_ERROR_PRINTF("Wrong return value: %s for volume cmd: %s\n",res, SHELL_CMD_VOLUME_GET);
+            volume_percentage = 50; ///wrong value: setting default to 50
+        }
+        else{
+            volume_percentage = atoi(res);
+            MENU_DEBUG_PRINTF("System volume = %d%%\n", volume_percentage);
+        }
+    }
+
+    /// ------- Get system brightness percentage -------
+    fp = popen(SHELL_CMD_BRIGHTNESS_GET, "r");
+    if (fp == NULL) {
+        MENU_ERROR_PRINTF("Failed to run command %s\n", SHELL_CMD_BRIGHTNESS_GET );
+        brightness_percentage = 50; ///wrong value: setting default to 50
+    }
+    else{
+        fgets(res, sizeof(res)-1, fp);
+
+        /// Check if brightness is a number (at least the first char)
+        if(res[0] < '0' || res[0] > '9'){
+            MENU_ERROR_PRINTF("Wrong return value: %s for volume cmd: %s\n",res, SHELL_CMD_BRIGHTNESS_GET);
+            brightness_percentage = 50; ///wrong value: setting default to 50
+        }
+        else{
+            brightness_percentage = atoi(res);
+            MENU_DEBUG_PRINTF("System brightness = %d%%\n", brightness_percentage);
+        }
+    }
+
+    /// Get save slot from game
+    state_slot = (state_slot%MAX_SAVE_SLOTS); // security
+}
+
+void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_confirmation, uint8_t menu_action){
+    /// --------- Clear HW screen ----------
+    //SDL_FillRect(virtual_hw_screen, NULL, SDL_MapRGB(virtual_hw_screen->format, 255, 0, 0));
+    if(SDL_BlitSurface(backup_hw_screen, NULL, virtual_hw_screen, NULL)){
+        MENU_ERROR_PRINTF("ERROR Could not Clear virtual_hw_screen: %s\n", SDL_GetError());
+    }
+
+    /// --------- Setup Blit Window ----------
+    SDL_Rect menu_blit_window;
+    menu_blit_window.x = 0;
+    menu_blit_window.w = SCREEN_HORIZONTAL_SIZE;
+
+    /// --------- Blit prev menu Zone going away ----------
+    menu_blit_window.y = scroll;
+    menu_blit_window.h = SCREEN_VERTICAL_SIZE;
+    if(SDL_BlitSurface(menu_zone_surfaces[prevItem], &menu_blit_window, virtual_hw_screen, NULL)){
+        MENU_ERROR_PRINTF("ERROR Could not Blit surface on virtual_hw_screen: %s\n", SDL_GetError());
+    }
+
+    /// --------- Blit new menu Zone going in (only during animations) ----------
+    if(scroll>0){
+        menu_blit_window.y = SCREEN_VERTICAL_SIZE-scroll;
+        menu_blit_window.h = SCREEN_VERTICAL_SIZE;
+        if(SDL_BlitSurface(menu_zone_surfaces[menuItem], NULL, virtual_hw_screen, &menu_blit_window)){
+            MENU_ERROR_PRINTF("ERROR Could not Blit surface on virtual_hw_screen: %s\n", SDL_GetError());
+        }
+    }
+    else if(scroll<0){
+        menu_blit_window.y = SCREEN_VERTICAL_SIZE+scroll;
+        menu_blit_window.h = SCREEN_VERTICAL_SIZE;
+        if(SDL_BlitSurface(menu_zone_surfaces[menuItem], &menu_blit_window, virtual_hw_screen, NULL)){
+            MENU_ERROR_PRINTF("ERROR Could not Blit surface on virtual_hw_screen: %s\n", SDL_GetError());
+        }
+    }
+    /// --------- No Scroll ? Blitting menu-specific info
+    else{
+        SDL_Surface * text_surface = NULL;
+        char text_tmp[40];
+        SDL_Rect text_pos;
+        /*char fname[MAXPATHLEN];
+        memset(fname, 0, MAXPATHLEN);*/
+        char *fname = NULL;
+        uint16_t limit_filename_size = 24;
+
+        switch(idx_menus[menuItem]){
+        case MENU_TYPE_VOLUME:
+            draw_progress_bar(virtual_hw_screen, x_volume_bar, y_volume_bar,
+			      width_progress_bar, height_progress_bar, volume_percentage, 100/STEP_CHANGE_VOLUME);
+            break;
+
+        case MENU_TYPE_BRIGHTNESS:
+            draw_progress_bar(virtual_hw_screen, x_volume_bar, y_volume_bar,
+			      width_progress_bar, height_progress_bar, brightness_percentage, 100/STEP_CHANGE_BRIGHTNESS);
+            break;
+
+        case MENU_TYPE_SAVE:
+            /// ---- Write slot -----
+            sprintf(text_tmp, "IN SLOT   < %d >", state_slot+1);
+            text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+            text_pos.x = (virtual_hw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+            text_pos.y = virtual_hw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
+            SDL_BlitSurface(text_surface, NULL, virtual_hw_screen, &text_pos);
+
+            if(menu_action){
+                sprintf(text_tmp, "Saving...");
+                text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+            }
+            else{
+                if(menu_confirmation){
+                    sprintf(text_tmp, "Are you sure ?");
+                    text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+                }
+                else{
+		    fname = emu_get_save_fname(1, 0, state_slot, NULL);
+		    if (fname == NULL) {
+		        text_surface = TTF_RenderText_Blended(menu_info_font, "Free", text_color);
+		    }
+		    else{
+		        printf("Found saved file: %s\n", fname);
+			char *p = strrchr (fname, '/');
+			char *basename = p ? p + 1 : (char *) fname;
+			if(strlen(basename) > limit_filename_size){basename[limit_filename_size]=0;} //limiting size
+			text_surface = TTF_RenderText_Blended(menu_small_info_font, basename, text_color);
+		    }
+                }
+            }
+            text_pos.x = (virtual_hw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+            text_pos.y = virtual_hw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + 2*padding_y_from_center_menu_zone;
+            SDL_BlitSurface(text_surface, NULL, virtual_hw_screen, &text_pos);
+            break;
+
+        case MENU_TYPE_LOAD:
+            /// ---- Write slot -----
+            sprintf(text_tmp, "FROM SLOT   < %d >", state_slot+1);
+            text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+            text_pos.x = (virtual_hw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+            text_pos.y = virtual_hw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
+            SDL_BlitSurface(text_surface, NULL, virtual_hw_screen, &text_pos);
+
+            if(menu_action){
+                sprintf(text_tmp, "Loading...");
+                text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+            }
+            else{
+                if(menu_confirmation){
+                    sprintf(text_tmp, "Are you sure ?");
+                    text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+                }
+                else{
+		    fname = emu_get_save_fname(1, 0, state_slot, NULL);
+		    if (fname == NULL) {
+		       text_surface = TTF_RenderText_Blended(menu_info_font, "Free", text_color);
+		    }
+		    else{
+		        printf("Found saved file: %s\n", fname);
+                        char *p = strrchr (fname, '/');
+                        char *basename = p ? p + 1 : (char *) fname;
+                        if(strlen(basename) > limit_filename_size){basename[limit_filename_size]=0;} //limiting size
+                        text_surface = TTF_RenderText_Blended(menu_small_info_font, basename, text_color);
+		    }
+                }
+            }
+            text_pos.x = (virtual_hw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+            text_pos.y = virtual_hw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + 2*padding_y_from_center_menu_zone;
+            SDL_BlitSurface(text_surface, NULL, virtual_hw_screen, &text_pos);
+            break;
+
+        case MENU_TYPE_ASPECT_RATIO:
+            sprintf(text_tmp, "<   %s   >", aspect_ratio_name[aspect_ratio]);
+            text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+            text_pos.x = (virtual_hw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+            text_pos.y = virtual_hw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + padding_y_from_center_menu_zone;
+            SDL_BlitSurface(text_surface, NULL, virtual_hw_screen, &text_pos);
+            break;
+
+        case MENU_TYPE_EXIT:
+        case MENU_TYPE_POWERDOWN:
+            if(menu_confirmation){
+                sprintf(text_tmp, "Are you sure ?");
+                text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+                text_pos.x = (virtual_hw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+                text_pos.y = virtual_hw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + 2*padding_y_from_center_menu_zone;
+                SDL_BlitSurface(text_surface, NULL, virtual_hw_screen, &text_pos);
+            }
+            break;
+        default:
+            break;
+        }
+
+        /// ------ Free Surfaces -------
+        if(text_surface)
+             SDL_FreeSurface(text_surface);
+    }
+
+    /// --------- Render Screen ----------
+    SDL_Rotate_270(hw_screen, virtual_hw_screen);
+    //SDL_Flip(virtual_hw_screen);
+}
+
+
+void run_menu_loop()
+{
+    SDL_Event event;
+    uint32_t prev_ms = SDL_GetTicks();
+    uint32_t cur_ms = SDL_GetTicks();
+    static int menuItem=0;
+    int prevItem=menuItem;
+    int scroll=0;
+    uint8_t screen_refresh = 1;
+    char shell_cmd[100];
+    FILE *fp;
+    uint8_t menu_confirmation = 0;
+    stop_menu_loop = 0;
+
+    /// ------ Get init values -------
+    init_menu_system_values();
+
+    /// ------ Copy currently displayed screen -------
+    backup_hw_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        virtual_hw_screen->w, virtual_hw_screen->h, 32, 0, 0, 0, 0);
+    if(SDL_BlitSurface(virtual_hw_screen, NULL, backup_hw_screen, NULL)){
+        MENU_ERROR_PRINTF("ERROR Could not copy virtual_hw_screen: %s\n", SDL_GetError());
+    }
+
+    /// -------- Main loop ---------
+    while (!stop_menu_loop)
+    {
+        /// -------- Handle Keyboard Events ---------
+        if(!scroll){
+            while (SDL_PollEvent(&event))
+            switch(event.type)
+            {
+                case SDL_QUIT:
+                    engineState = PGS_Quit;
+                    stop_menu_loop = 1;
+		    break;
+	    case SDL_KEYDOWN:
+                switch (event.key.keysym.sym)
+                {
+                    case SDLK_b:
+                        if(menu_confirmation){
+                            /// ------ Reset menu confirmation ------
+                            menu_confirmation = 0;
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        /*else{
+                            stop_menu_loop = 1;
+                        }*/
+                        break;
+
+                    case SDLK_q:
+                    case SDLK_ESCAPE:
+                        stop_menu_loop = 1;
+                        break;
+
+                    case SDLK_d:
+                    case SDLK_DOWN:
+                        MENU_DEBUG_PRINTF("DOWN\n");
+                        /// ------ Start scrolling to new menu -------
+                        menuItem++;
+                        if (menuItem>=nb_menu_zones) menuItem=0;
+                        scroll=SCROLL_SPEED_PX;
+
+                        /// ------ Reset menu confirmation ------
+                        menu_confirmation = 0;
+
+                        /// ------ Refresh screen ------
+                        screen_refresh = 1;
+                        break;
+
+                    case SDLK_u:
+                    case SDLK_UP:
+                        MENU_DEBUG_PRINTF("UP\n");
+                        /// ------ Start scrolling to new menu -------
+                        menuItem--;
+                        if (menuItem<0) menuItem=nb_menu_zones-1;
+                        scroll=-SCROLL_SPEED_PX;
+
+                        /// ------ Reset menu confirmation ------
+                        menu_confirmation = 0;
+
+                        /// ------ Refresh screen ------
+                        screen_refresh = 1;
+                        break;
+
+                    case SDLK_l:
+                    case SDLK_LEFT:
+                        //MENU_DEBUG_PRINTF("LEFT\n");
+                        if(idx_menus[menuItem] == MENU_TYPE_VOLUME){
+                            MENU_DEBUG_PRINTF("Volume DOWN\n");
+                            /// ----- Compute new value -----
+                            volume_percentage = (volume_percentage < STEP_CHANGE_VOLUME)?
+                                                    0:(volume_percentage-STEP_CHANGE_VOLUME);
+
+                            /// ----- Shell cmd ----
+                            sprintf(shell_cmd, "%s %d", SHELL_CMD_VOLUME_SET, volume_percentage);
+                            fp = popen(shell_cmd, "r");
+                            if (fp == NULL) {
+                                MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                            }
+
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_BRIGHTNESS){
+                            MENU_DEBUG_PRINTF("Brightness DOWN\n");
+                            /// ----- Compute new value -----
+                            brightness_percentage = (brightness_percentage < STEP_CHANGE_BRIGHTNESS)?
+                                                    0:(brightness_percentage-STEP_CHANGE_BRIGHTNESS);
+
+                            /// ----- Shell cmd ----
+                            sprintf(shell_cmd, "%s %d", SHELL_CMD_BRIGHTNESS_SET, brightness_percentage);
+                            fp = popen(shell_cmd, "r");
+                            if (fp == NULL) {
+                                MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                            }
+                        /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_SAVE){
+                            MENU_DEBUG_PRINTF("Save Slot DOWN\n");
+                            state_slot = (!state_slot)?(MAX_SAVE_SLOTS-1):(state_slot-1);
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_LOAD){
+                            MENU_DEBUG_PRINTF("Load Slot DOWN\n");
+                            //idx_load_slot = (!idx_load_slot)?(MAX_SAVE_SLOTS-1):(idx_load_slot-1);
+                            state_slot = (!state_slot)?(MAX_SAVE_SLOTS-1):(state_slot-1);
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
+                            MENU_DEBUG_PRINTF("Aspect Ratio DOWN\n");
+                            aspect_ratio = (!aspect_ratio)?(NB_ASPECT_RATIOS_TYPES-1):(aspect_ratio-1);
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        break;
+
+                    case SDLK_r:
+                    case SDLK_RIGHT:
+                        //MENU_DEBUG_PRINTF("RIGHT\n");
+                        if(idx_menus[menuItem] == MENU_TYPE_VOLUME){
+                            MENU_DEBUG_PRINTF("Volume UP\n");
+                            /// ----- Compute new value -----
+                            volume_percentage = (volume_percentage > 100 - STEP_CHANGE_VOLUME)?
+                                                    100:(volume_percentage+STEP_CHANGE_VOLUME);
+
+                            /// ----- Shell cmd ----
+                            sprintf(shell_cmd, "%s %d", SHELL_CMD_VOLUME_SET, volume_percentage);
+                            fp = popen(shell_cmd, "r");
+                            if (fp == NULL) {
+                                MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                            }
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_BRIGHTNESS){
+                            MENU_DEBUG_PRINTF("Brightness UP\n");
+                            /// ----- Compute new value -----
+                            brightness_percentage = (brightness_percentage > 100 - STEP_CHANGE_BRIGHTNESS)?
+                                                    100:(brightness_percentage+STEP_CHANGE_BRIGHTNESS);
+
+                            /// ----- Shell cmd ----
+                            sprintf(shell_cmd, "%s %d", SHELL_CMD_BRIGHTNESS_SET, brightness_percentage);
+                            fp = popen(shell_cmd, "r");
+                            if (fp == NULL) {
+                                MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                            }
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_SAVE){
+                            MENU_DEBUG_PRINTF("Save Slot UP\n");
+                            state_slot = (state_slot+1)%MAX_SAVE_SLOTS;
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_LOAD){
+                            MENU_DEBUG_PRINTF("Load Slot UP\n");
+                            //idx_load_slot = (idx_load_slot+1)%MAX_SAVE_SLOTS;
+                            state_slot = (state_slot+1)%MAX_SAVE_SLOTS;
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
+                            MENU_DEBUG_PRINTF("Aspect Ratio UP\n");
+                            aspect_ratio = (aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        break;
+
+                    case SDLK_a:
+                    case SDLK_RETURN:
+                        if(idx_menus[menuItem] == MENU_TYPE_SAVE){
+                            if(menu_confirmation){
+                                MENU_DEBUG_PRINTF("Saving in slot %d\n", state_slot);
+                                /// ------ Refresh Screen -------
+                                menu_screen_refresh(menuItem, prevItem, scroll, menu_confirmation, 1);
+
+                                /// ------ Save game ------
+                                int ret = emu_save_load_game(0, 0);
+                                if(ret){
+                                    MENU_ERROR_PRINTF("Save Failed\n");
+                                }
+                                /*snprintf(hud_msg, sizeof(hud_msg), ret == 0 ? "SAVED" : "FAIL!");
+                                hud_new_msg = 3;*/
+                                stop_menu_loop = 1;
+                            }
+                            else{
+                                MENU_DEBUG_PRINTF("Save game - asking confirmation\n");
+                                menu_confirmation = 1;
+                                /// ------ Refresh screen ------
+                                screen_refresh = 1;
+                            }
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_LOAD){
+                            if(menu_confirmation){
+                                MENU_DEBUG_PRINTF("Loading in slot %d\n", state_slot);
+                                /// ------ Refresh Screen -------
+                                menu_screen_refresh(menuItem, prevItem, scroll, menu_confirmation, 1);
+
+                                /// ------ Load game ------
+                                int ret = emu_save_load_game(1, 0);
+                                if(ret){
+                                    MENU_ERROR_PRINTF("Load Failed\n");
+                                }
+                                /*snprintf(hud_msg, sizeof(hud_msg), ret == 0 ? "LOADED" : "FAIL!");
+                                hud_new_msg = 3;*/
+                                stop_menu_loop = 1;
+                            }
+                            else{
+                                MENU_DEBUG_PRINTF("Save game - asking confirmation\n");
+                                menu_confirmation = 1;
+                                /// ------ Refresh screen ------
+                                screen_refresh = 1;
+                            }
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_EXIT){
+                            MENU_DEBUG_PRINTF("Exit game\n");
+                            if(menu_confirmation){
+                                MENU_DEBUG_PRINTF("Exit game - confirmed\n");
+                                /// ----- The game should be saved here ----
+
+                                /// ----- Exit game and back to launcher ----
+                                engineState = PGS_Quit;
+                                stop_menu_loop = 1;
+                            }
+                            else{
+                                MENU_DEBUG_PRINTF("Exit game - asking confirmation\n");
+                                menu_confirmation = 1;
+                                /// ------ Refresh screen ------
+                                screen_refresh = 1;
+                            }
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_POWERDOWN){
+                            if(menu_confirmation){
+                                MENU_DEBUG_PRINTF("Powerdown - confirmed\n");
+                                /// ----- Shell cmd ----
+                                sprintf(shell_cmd, "%s", SHELL_CMD_POWERDOWN);
+                                fp = popen(shell_cmd, "r");
+                                if (fp == NULL) {
+                                    MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                                }
+                            }
+                            else{
+                                MENU_DEBUG_PRINTF("Powerdown - asking confirmation\n");
+                                menu_confirmation = 1;
+                                /// ------ Refresh screen ------
+                                screen_refresh = 1;
+                            }
+                        }
+                        break;
+
+                    default:
+                        //MENU_DEBUG_PRINTF("Keydown: %d\n", event.key.keysym.sym);
+                        break;
+                }
+                break;
+            }
+        }
+
+        /// --------- Handle Scroll effect ---------
+        if (scroll>0){
+            scroll+=SCROLL_SPEED_PX;
+            screen_refresh = 1;
+        }
+        if (scroll<0){
+            scroll-=SCROLL_SPEED_PX;
+            screen_refresh = 1;
+        }
+        if (scroll>MENU_ZONE_HEIGHT || scroll<-MENU_ZONE_HEIGHT) {
+            prevItem=menuItem;
+            scroll=0;
+            screen_refresh = 1;
+        }
+
+        /// --------- Handle FPS ---------
+        cur_ms = SDL_GetTicks();
+        if(cur_ms-prev_ms < 1000/FPS_MENU){
+            SDL_Delay(1000/FPS_MENU - (cur_ms-prev_ms));
+        }
+        prev_ms = SDL_GetTicks();
+
+
+        /// --------- Refresh screen
+        if(screen_refresh){
+            menu_screen_refresh(menuItem, prevItem, scroll, menu_confirmation, 0);
+        }
+
+        /// --------- reset screen refresh ---------
+        screen_refresh = 0;
+    }
+}
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 static void make_bg(int no_scale)
 {
@@ -201,13 +1125,12 @@ static void cdload_progress_cb(const char *fname, int percent)
 void menu_romload_prepare(const char *rom_name)
 {
 	const char *p = rom_name + strlen(rom_name);
-	int i;
 
 	while (p > rom_name && *p != '/')
 		p--;
 
 	/* fill all buffers, callbacks won't update in full */
-	for (i = 0; i < 3; i++) {
+	for (int i = 0; i < 3; i++) {
 		menu_draw_begin(1, 1);
 		smalltext_out16(1, 1, "Loading", 0xffff);
 		smalltext_out16(1, me_sfont_h, p, 0xffff);
@@ -224,10 +1147,12 @@ void menu_romload_end(void)
 	PicoCartLoadProgressCB = NULL;
 	PicoCDLoadProgressCB = NULL;
 
-	menu_draw_begin(0, 1);
-	smalltext_out16(1, (cdload_called ? 6 : 3) * me_sfont_h,
-		"Starting emulation...", 0xffff);
-	menu_draw_end();
+	for (int i = 0; i < 3; i++) {
+		menu_draw_begin(0, 1);
+		smalltext_out16(1, (cdload_called ? 6 : 3) * me_sfont_h,
+			"Starting emulation...", 0xffff);
+		menu_draw_end();
+	}
 }
 
 // ------------ patch/gg menu ------------
@@ -496,7 +1421,7 @@ static menu_entry e_menu_adv_options[] =
 {
 	mee_onoff     ("SRAM/BRAM saves",          MA_OPT_SRAM_STATES,    currentConfig.EmuOpt, EOPT_EN_SRAM),
 	mee_onoff     ("Disable sprite limit",     MA_OPT2_NO_SPRITE_LIM, PicoIn.opt, POPT_DIS_SPRITE_LIM),
-	mee_range_h   ("Overclock M68k (%)",       MA_OPT2_OVERCLOCK_M68K,currentConfig.overclock_68k, 0, 1000, h_ovrclk),
+	mee_range_h   ("Overclock M68k (%%)",       MA_OPT2_OVERCLOCK_M68K,currentConfig.overclock_68k, 0, 1000, h_ovrclk),
 	mee_onoff     ("Emulate Z80",              MA_OPT2_ENABLE_Z80,    PicoIn.opt, POPT_EN_Z80),
 	mee_onoff     ("Emulate YM2612 (FM)",      MA_OPT2_ENABLE_YM2612, PicoIn.opt, POPT_EN_FM),
 	mee_onoff     ("Emulate SN76496 (PSG)",    MA_OPT2_ENABLE_SN76496,PicoIn.opt, POPT_EN_PSG),
@@ -720,24 +1645,26 @@ static const char h_confirm_save[]    = "Ask for confirmation when overwriting s
 
 static menu_entry e_menu_options[] =
 {
-	mee_range     ("Save slot",                MA_OPT_SAVE_SLOT,     state_slot, 0, 9),
+	// mee_range     ("Save slot",                MA_OPT_SAVE_SLOT,     state_slot, 0, 9),
 	mee_range_cust("Frameskip",                MA_OPT_FRAMESKIP,     currentConfig.Frameskip, -1, 16, mgn_opt_fskip),
-	mee_cust      ("Region",                   MA_OPT_REGION,        mh_opt_misc, mgn_opt_region),
 	mee_onoff     ("Show FPS",                 MA_OPT_SHOW_FPS,      currentConfig.EmuOpt, EOPT_SHOW_FPS),
+	mee_cust      ("Region",                   MA_OPT_REGION,        mh_opt_misc, mgn_opt_region),
 	mee_onoff     ("Enable sound",             MA_OPT_ENABLE_SOUND,  currentConfig.EmuOpt, EOPT_EN_SOUND),
 	mee_cust      ("Sound Quality",            MA_OPT_SOUND_QUALITY, mh_opt_misc, mgn_opt_sound),
 	mee_enum_h    ("Confirm savestate",        MA_OPT_CONFIRM_STATES,currentConfig.confirm_save, men_confirm_save, h_confirm_save),
 	mee_range     ("",                         MA_OPT_CPU_CLOCKS,    currentConfig.CPUclock, 20, 3200),
-	mee_handler   ("[Display options]",        menu_loop_gfx_options),
-	mee_handler   ("[Sega/Mega CD options]",   menu_loop_cd_options),
+	mee_handler   ("[Controls]",                      menu_loop_keyconfig),
+	mee_handler   ("[Display]",        menu_loop_gfx_options),
+	mee_handler   ("[Sega/Mega CD]",   menu_loop_cd_options),
 #ifndef NO_32X
-	mee_handler   ("[32X options]",            menu_loop_32x_options),
+	mee_handler   ("[32X]",            menu_loop_32x_options),
 #endif
 	mee_handler   ("[Advanced options]",       menu_loop_adv_options),
 	mee_cust_nosave("Save global config",      MA_OPT_SAVECFG, mh_saveloadcfg, mgn_saveloadcfg),
 	mee_cust_nosave("Save cfg for loaded game",MA_OPT_SAVECFG_GAME, mh_saveloadcfg, mgn_saveloadcfg),
 	mee_cust_nosave("Load cfg from profile",   MA_OPT_LOADCFG, mh_saveloadcfg, mgn_saveloadcfg),
 	mee_handler   ("Restore defaults",         mh_restore_defaults),
+	mee_handler_id("Credits",            MA_MAIN_CREDITS,     main_menu_handler),
 	mee_end,
 };
 
@@ -997,7 +1924,7 @@ static void menu_main_draw_status(void)
 			bp[(w - i) + g_screen_ppitch * u] = menu_text_color;
 }
 
-static int main_menu_handler(int id, int keys)
+int main_menu_handler(int id, int keys)
 {
 	const char *ret_name;
 
@@ -1069,16 +1996,16 @@ static menu_entry e_menu_main[] =
 	mee_label     (""),
 	mee_label     (""),
 	mee_label     (""),
-	mee_handler_id("Resume game",        MA_MAIN_RESUME_GAME, main_menu_handler),
-	mee_handler_id("Save State",         MA_MAIN_SAVE_STATE,  main_menu_handler),
-	mee_handler_id("Load State",         MA_MAIN_LOAD_STATE,  main_menu_handler),
-	mee_handler_id("Reset game",         MA_MAIN_RESET_GAME,  main_menu_handler),
-	mee_handler_id("Load new ROM/ISO",   MA_MAIN_LOAD_ROM,    main_menu_handler),
+	// mee_handler_id("Resume game",        MA_MAIN_RESUME_GAME, main_menu_handler),
+	mee_handler_id("Load state",         MA_MAIN_LOAD_STATE,  main_menu_handler),
+	mee_handler_id("Save state",         MA_MAIN_SAVE_STATE,  main_menu_handler),
+	// mee_handler_id("Load new ROM/ISO",   MA_MAIN_LOAD_ROM,    main_menu_handler),
 	mee_handler_id("Change CD/ISO",      MA_MAIN_CHANGE_CD,   main_menu_handler),
-	mee_handler   ("Change options",                          menu_loop_options),
-	mee_handler   ("Configure controls",                      menu_loop_keyconfig),
-	mee_handler_id("Credits",            MA_MAIN_CREDITS,     main_menu_handler),
+	// mee_handler   ("Configure controls",                      menu_loop_keyconfig),
+	// mee_handler_id("Credits",            MA_MAIN_CREDITS,     main_menu_handler),
 	mee_handler_id("Patches / GameGenie",MA_MAIN_PATCHES,     main_menu_handler),
+	mee_handler   ("Settings",                                menu_loop_options),
+	mee_handler_id("Reset",         MA_MAIN_RESET_GAME,  main_menu_handler),
 	mee_handler_id("Exit",               MA_MAIN_EXIT,        main_menu_handler),
 	mee_end,
 };
@@ -1097,6 +2024,23 @@ void menu_loop(void)
 	menu_enter(PicoGameLoaded);
 	in_set_config_int(0, IN_CFG_BLOCKING, 1);
 	me_loop_d(e_menu_main, &sel, NULL, menu_main_draw_status);
+
+	if (PicoGameLoaded) {
+		if (engineState == PGS_Menu)
+			engineState = PGS_Running;
+		/* wait until menu, ok, back is released */
+		while (in_menu_wait_any(NULL, 50) & (PBTN_MENU|PBTN_MOK|PBTN_MBACK))
+			;
+	}
+
+	in_set_config_int(0, IN_CFG_BLOCKING, 0);
+	plat_video_menu_leave();
+}
+
+void menu_loop_funkey(void)
+{
+	in_set_config_int(0, IN_CFG_BLOCKING, 1);
+	run_menu_loop();
 
 	if (PicoGameLoaded) {
 		if (engineState == PGS_Menu)
