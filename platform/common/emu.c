@@ -52,6 +52,8 @@ int pico_pen_x = 320/2, pico_pen_y = 240/2;
 int pico_inp_mode;
 int flip_after_sync;
 int engineState = PGS_Menu;
+int show_fps_bypass = 0;
+int need_screen_cleared = 0;
 
 static short __attribute__((aligned(4))) sndBuffer[2*44100/50];
 
@@ -1436,8 +1438,10 @@ void emu_loop(void)
 			sprintf(fpsbuff, "%02i/%02i/%02i", frames_shown, bench_fps_s, (bf[0]+bf[1]+bf[2]+bf[3])>>2);
 			printf("%s\n", fpsbuff);
 #else
-			if (currentConfig.EmuOpt & EOPT_SHOW_FPS)
+			if (currentConfig.EmuOpt & EOPT_SHOW_FPS || show_fps_bypass){
+				printf("%02i/%02i  \n", frames_shown, frames_done);
 				snprintf(fpsbuff, 8, "%02i/%02i  ", frames_shown, frames_done);
+			}
 #endif
 			frames_shown = frames_done = 0;
 			timestamp_fps_x3 += ms_to_ticks(1000) * 3;

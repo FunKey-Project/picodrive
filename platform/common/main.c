@@ -38,6 +38,10 @@ void parse_cmd_line(int argc, char *argv[])
 			{
 				if (x+1 < argc) { ++x; load_state_slot = atoi(argv[x]); }
 			}
+			else if (strcasecmp(argv[x], "-fps") == 0) {
+				currentConfig.EmuOpt |= EOPT_SHOW_FPS;
+				show_fps_bypass = 1;
+			}
 			else if (strcasecmp(argv[x], "-pdb") == 0) {
 				if (x+1 < argc) { ++x; pdb_command(argv[x]); }
 			}
@@ -66,6 +70,7 @@ void parse_cmd_line(int argc, char *argv[])
 		printf("usage: %s [options] [romfile]\n", argv[0]);
 		printf("options:\n"
 			" -config <file>    use specified config file instead of default 'config.cfg'\n"
+			" -fps				use to show fps\n"
 			" -loadstate <num>  if ROM is specified, try loading savestate slot <num>\n");
 		exit(1);
 	}
