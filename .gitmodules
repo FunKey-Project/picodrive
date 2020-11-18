@@ -1,6 +1,6 @@
 [submodule "platform/libpicofe"]
 	path = platform/libpicofe
-	url = git@github.com:FunKey-Project/libpicofe.git
+	url = https://github.com/FunKey-Project/libpicofe.git
 [submodule "cpu/cyclone"]
 	path = cpu/cyclone
-	url = git@github.com:FunKey-Project/cyclone68000.git
+	url = https://github.com/FunKey-Project/cyclone68000.git
