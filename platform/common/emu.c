@@ -1255,7 +1255,7 @@ static void run_events_ui(unsigned int which)
 		/*char txt[100];
 		sprintf(txt, "DISPLAY MODE: MANUAL ZOOM - %d%%", aspect_ratio_factor_percent);
 		plat_status_msg_busy_first(txt);*/
-		sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%\"",
+		sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
 			SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
 		fp = popen(shell_cmd, "r");
 		if (fp == NULL) {
@@ -1279,7 +1279,7 @@ static void run_events_ui(unsigned int which)
 		/*char txt[100];
 		sprintf(txt, "DISPLAY MODE: MANUAL ZOOM - %d%%", aspect_ratio_factor_percent);
 		plat_status_msg_busy_first(txt);*/
-        sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%\"",
+        sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
 			SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
         fp = popen(shell_cmd, "r");
         if (fp == NULL) {
@@ -1296,7 +1296,7 @@ static void run_events_ui(unsigned int which)
 		//char txt[100];
 		if(aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
 			//sprintf(txt, "DISPLAY MODE: MANUAL ZOOM - %d%%", aspect_ratio_factor_percent);
-			sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%\"",
+			sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
 				SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
 		}
 		else{
