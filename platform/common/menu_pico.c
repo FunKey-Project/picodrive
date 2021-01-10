@@ -1019,11 +1019,9 @@ void run_menu_loop()
                             if(menu_confirmation){
                                 MENU_DEBUG_PRINTF("Powerdown - confirmed\n");
                                 /// ----- Shell cmd ----
-                                sprintf(shell_cmd, "%s", SHELL_CMD_POWERDOWN);
-                                fp = popen(shell_cmd, "r");
-                                if (fp == NULL) {
-                                    MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
-                                }
+                                execlp(SHELL_CMD_SHUTDOWN_FUNKEY, SHELL_CMD_SHUTDOWN_FUNKEY, NULL);
+                                MENU_ERROR_PRINTF("Failed to run command %s\n", SHELL_CMD_SHUTDOWN_FUNKEY);
+                                exit(0);
                             }
                             else{
                                 MENU_DEBUG_PRINTF("Powerdown - asking confirmation\n");

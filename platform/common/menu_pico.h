@@ -50,12 +50,13 @@ typedef enum {RESUME_OPTIONS} ENUM_RESUME_OPTIONS;
 #define SHELL_CMD_VOLUME_SET                "volume_set"
 #define SHELL_CMD_BRIGHTNESS_GET            "brightness_get"
 #define SHELL_CMD_BRIGHTNESS_SET            "brightness_set"
-#define SHELL_CMD_POWERDOWN                 "shutdown_funkey"
-#define SHELL_CMD_SCHEDULE_POWERDOWN        "sched_shutdown"
 #define SHELL_CMD_NOTIF                     "notif_set"
 #define SHELL_CMD_WRITE_QUICK_LOAD_CMD      "write_args_quick_load_file"
 #define SHELL_CMD_TURN_AMPLI_ON             "start_audio_amp 1"
 #define SHELL_CMD_TURN_AMPLI_OFF            "start_audio_amp 0"
+#define SHELL_CMD_CANCEL_SCHED_POWERDOWN    "cancel_sched_powerdown"
+#define SHELL_CMD_INSTANT_PLAY              "instant_play"
+#define SHELL_CMD_SHUTDOWN_FUNKEY           "shutdown_funkey"
 
 #define MAXPATHLEN	512
 
