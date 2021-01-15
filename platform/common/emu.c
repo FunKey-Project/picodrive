@@ -1253,9 +1253,9 @@ static void run_events_ui(unsigned int which)
 		aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
 		/// ----- HUD msg ------
 		/*char txt[100];
-		sprintf(txt, "DISPLAY MODE: MANUAL ZOOM - %d%%", aspect_ratio_factor_percent);
+		sprintf(txt, "    DISPLAY MODE: ZOOMED - %d%%", aspect_ratio_factor_percent);
 		plat_status_msg_busy_first(txt);*/
-		sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
+		sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
 			SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
 		fp = popen(shell_cmd, "r");
 		if (fp == NULL) {
@@ -1277,9 +1277,9 @@ static void run_events_ui(unsigned int which)
 		aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
 		/// ----- HUD msg ------
 		/*char txt[100];
-		sprintf(txt, "DISPLAY MODE: MANUAL ZOOM - %d%%", aspect_ratio_factor_percent);
+		sprintf(txt, "    DISPLAY MODE: ZOOMED - %d%%", aspect_ratio_factor_percent);
 		plat_status_msg_busy_first(txt);*/
-        sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
+        sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
 			SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
         fp = popen(shell_cmd, "r");
         if (fp == NULL) {
@@ -1295,13 +1295,13 @@ static void run_events_ui(unsigned int which)
 		/// ----- HUD msg ------
 		//char txt[100];
 		if(aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
-			//sprintf(txt, "DISPLAY MODE: MANUAL ZOOM - %d%%", aspect_ratio_factor_percent);
-			sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
+			//sprintf(txt, "    DISPLAY MODE: ZOOMED - %d%%", aspect_ratio_factor_percent);
+			sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
 				SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
 		}
 		else{
 			//sprintf(txt, "DISPLAY MODE: %s", aspect_ratio_name[aspect_ratio]);
-			sprintf(shell_cmd, "%s %d \"     DISPLAY MODE: %s\"",
+			sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: %s\"",
 				SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_name[aspect_ratio]);
 		}
 		//plat_status_msg_busy_first(txt);
