@@ -23,6 +23,7 @@
 #include "emu.h"
 #include "input_pico.h"
 #include "menu_pico.h"
+#include "configfile.h"
 #include "config_file.h"
 
 #include <pico/pico_int.h>
@@ -1261,6 +1262,9 @@ static void run_events_ui(unsigned int which)
 		if (fp == NULL) {
 			printf("Failed to run command %s\n", shell_cmd);
 		}
+
+        // Save config file
+        configfile_save(cfg_file_rom);
 	}
 	if (which & PEV_AR_FACT_DOWN)
 	{
@@ -1284,6 +1288,9 @@ static void run_events_ui(unsigned int which)
         fp = popen(shell_cmd, "r");
         if (fp == NULL) {
 		printf("Failed to run command %s\n", shell_cmd);
+
+        // Save config file
+        configfile_save(cfg_file_rom);
 	}
 
 	}
@@ -1309,6 +1316,9 @@ static void run_events_ui(unsigned int which)
 		if (fp == NULL) {
 			printf("Failed to run command %s\n", shell_cmd);
 		}
+
+        // Save config file
+        configfile_save(cfg_file_rom);
 	}
 	if (which & (PEV_SSLOT_PREV|PEV_SSLOT_NEXT))
 	{

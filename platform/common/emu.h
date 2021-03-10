@@ -93,6 +93,7 @@ extern char *prog_name;
 extern char *mRomName;
 extern char *mRomPath;
 extern char *quick_save_file;
+extern char *cfg_file_rom;
 
 #define PICO_PEN_ADJUST_X 4
 #define PICO_PEN_ADJUST_Y 2
