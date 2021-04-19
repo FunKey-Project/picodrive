@@ -1186,7 +1186,9 @@ static void run_events_ui(unsigned int which)
 		fp = popen(shell_cmd, "r");
 		if (fp == NULL) {
 			printf("Failed to run command %s\n", shell_cmd);
-		}
+		}else {
+	        pclose(fp);
+	    }
 	}
 	if (which & PEV_VOL_UP)
 	{
@@ -1203,7 +1205,9 @@ static void run_events_ui(unsigned int which)
 		fp = popen(shell_cmd, "r");
 		if (fp == NULL) {
 			printf("Failed to run command %s\n", shell_cmd);
-		}
+		}else {
+	        pclose(fp);
+	    }
 	}
 	if (which & PEV_BRIGHT_UP)
 	{
@@ -1220,7 +1224,9 @@ static void run_events_ui(unsigned int which)
 		fp = popen(shell_cmd, "r");
 		if (fp == NULL) {
 			printf("Failed to run command %s\n", shell_cmd);
-		}
+		}else {
+	        pclose(fp);
+	    }
 	}
 	if (which & PEV_BRIGHT_DOWN)
 	{
@@ -1237,7 +1243,9 @@ static void run_events_ui(unsigned int which)
 		fp = popen(shell_cmd, "r");
 		if (fp == NULL) {
 			printf("Failed to run command %s\n", shell_cmd);
-		}
+		}else {
+	        pclose(fp);
+	    }
 	}
 	if (which & PEV_AR_FACT_UP)
 	{
@@ -1261,7 +1269,9 @@ static void run_events_ui(unsigned int which)
 		fp = popen(shell_cmd, "r");
 		if (fp == NULL) {
 			printf("Failed to run command %s\n", shell_cmd);
-		}
+		}else {
+	        pclose(fp);
+	    }
 
         // Save config file
         configfile_save(cfg_file_rom);
@@ -1287,11 +1297,13 @@ static void run_events_ui(unsigned int which)
 			SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
         fp = popen(shell_cmd, "r");
         if (fp == NULL) {
-		printf("Failed to run command %s\n", shell_cmd);
+			printf("Failed to run command %s\n", shell_cmd);
+		}else {
+	        pclose(fp);
+	    }
 
         // Save config file
         configfile_save(cfg_file_rom);
-	}
 
 	}
 	if (which & PEV_DISPMODE)
@@ -1314,8 +1326,10 @@ static void run_events_ui(unsigned int which)
 		//plat_status_msg_busy_first(txt);
 		fp = popen(shell_cmd, "r");
 		if (fp == NULL) {
-			printf("Failed to run command %s\n", shell_cmd);
-		}
+			printf("Failed to run command %s\n", shell_cmd); 
+		} else {
+	        pclose(fp);
+	    }
 
         // Save config file
         configfile_save(cfg_file_rom);
@@ -1433,12 +1447,12 @@ void quick_save_and_poweroff()
     if (popen(SHELL_CMD_CANCEL_SCHED_POWERDOWN, "r") == NULL)
     {
         /* Countdown is still ticking, so better do nothing
-	   than start writing and get interrupted!
-	*/
+		   than start writing and get interrupted!
+		*/
         printf("Failed to cancel scheduled shutdown\n");
-	exit(0);
+		exit(0);
     }
-
+	
     /* Save  */
     emu_save_load_game_from_file(0, quick_save_file);
 
