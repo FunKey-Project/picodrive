@@ -16,7 +16,7 @@
 #include "../libpicofe/gl.h"
 #include "emu.h"
 #include "menu_pico.h"
-#include "configfile.h"
+#include "configfile_fk.h"
 #include "input_pico.h"
 #include "version.h"
 

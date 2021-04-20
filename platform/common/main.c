@@ -16,7 +16,7 @@
 #include "../libpicofe/input.h"
 #include "../libpicofe/plat.h"
 #include "menu_pico.h"
-#include "configfile.h"
+#include "configfile_fk.h"
 #include "emu.h"
 #include "version.h"
 #include <cpu/debug.h>
@@ -33,7 +33,7 @@ char *quick_save_file = NULL;
 char *cfg_file_default = NULL;
 char *cfg_file_rom = NULL;
 static char *cfg_file_default_name = "default_config";
-static char *cfg_file_extension = "cfg";
+static char *cfg_file_extension = "fkcfg";
 int mQuickSaveAndPoweroff=0;
 
 
