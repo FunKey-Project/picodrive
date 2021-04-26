@@ -1,4 +1,4 @@
-// configfile.c - handles loading and saving the configuration options
+// configfile_fk.c - handles loading and saving the configuration options
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <ctype.h>
 
-#include "configfile.h"
+#include "configfile_fk.h"
 
 #define ARRAY_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 
