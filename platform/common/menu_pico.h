@@ -43,6 +43,8 @@ typedef enum {RESUME_OPTIONS} ENUM_RESUME_OPTIONS;
 #define SHELL_CMD_CANCEL_SCHED_POWERDOWN    "cancel_sched_powerdown"
 #define SHELL_CMD_INSTANT_PLAY              "instant_play"
 #define SHELL_CMD_SHUTDOWN_FUNKEY           "shutdown_funkey"
+#define SHELL_CMD_KEYMAP_DEFAULT            "keymap default"
+#define SHELL_CMD_KEYMAP_RESUME             "keymap resume"
 
 #define MAXPATHLEN	512
 
