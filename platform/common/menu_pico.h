@@ -39,9 +39,9 @@ typedef enum {RESUME_OPTIONS} ENUM_RESUME_OPTIONS;
 #define SHELL_CMD_NOTIF_SET                 "notif set"
 #define SHELL_CMD_AUDIO_AMP_ON              "audio_amp on"
 #define SHELL_CMD_AUDIO_AMP_OFF             "audio_amp off"
-#define SHELL_CMD_CANCEL_SCHED_POWERDOWN    "cancel_sched_powerdown"
+#define SHELL_CMD_POWERDOWN                 "powerdown"
+#define SHELL_CMD_POWERDOWN_HANDLE          "powerdown handle"
 #define SHELL_CMD_INSTANT_PLAY              "instant_play"
-#define SHELL_CMD_SHUTDOWN_FUNKEY           "shutdown_funkey"
 #define SHELL_CMD_KEYMAP_DEFAULT            "keymap default"
 #define SHELL_CMD_KEYMAP_RESUME             "keymap resume"
 

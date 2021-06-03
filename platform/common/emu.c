@@ -1444,7 +1444,7 @@ void quick_save_and_poweroff()
     printf("Save Instant Play file\n");
 
     /* Send command to cancel any previously scheduled powerdown */
-    if (popen(SHELL_CMD_CANCEL_SCHED_POWERDOWN, "r") == NULL)
+    if (popen(SHELL_CMD_POWERDOWN_HANDLE, "r") == NULL)
     {
         /* Countdown is still ticking, so better do nothing
 		   than start writing and get interrupted!
